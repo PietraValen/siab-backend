@@ -1,0 +1,91 @@
+### SIAB — requisições de exemplo
+### Requer a extensão "REST Client" (humao.rest-client) no VS Code.
+### Clique em "Send Request" acima de cada bloco (linhas separadas por ###).
+### Para uma collection completa importável no Postman/Insomnia, veja
+### siab-backend.postman_collection.json na raiz do projeto.
+
+@baseUrl = http://localhost:8080
+@adminUser = admin
+@adminPass = TrocarSenha123!
+
+### 1. Login administrativo — copie o token da resposta para usar abaixo
+# Credencial semeada em data.sql para o primeiro acesso; troque assim que
+# possível via "3. Criar um novo administrador".
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{adminUser}}",
+  "password": "{{adminPass}}"
+}
+
+### 2. Listar usuários (requer token — cole o valor recebido acima)
+@token = COLE_O_TOKEN_AQUI
+
+GET {{baseUrl}}/api/admin/usuarios
+Authorization: Bearer {{token}}
+
+### 3. Criar um novo administrador (senha mínimo 8 caracteres)
+POST {{baseUrl}}/api/admin/administradores
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "username": "novo-admin",
+  "senha": "SenhaForte123!"
+}
+
+### 4. Criar um usuário de teste (nível 1 = Acesso Geral, ver data.sql)
+POST {{baseUrl}}/api/admin/usuarios
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Beatriz Novais",
+  "cargo": "Analista de Segurança",
+  "nivelAcessoId": 1
+}
+
+### 5. Cadastrar rosto (Fase 1 a 4) — troque usuarioId e o caminho da imagem
+# No VS Code REST Client, multipart precisa de um arquivo real no disco.
+# Guarde o "embeddingId" da resposta para usar no passo 8.
+POST {{baseUrl}}/api/enrollment
+Content-Type: multipart/form-data; boundary=----siabBoundary
+
+------siabBoundary
+Content-Disposition: form-data; name="usuarioId"
+
+1
+------siabBoundary
+Content-Disposition: form-data; name="imagem"; filename="rosto.jpg"
+Content-Type: image/jpeg
+
+< ./src/test/resources/fixtures/rosto-exemplo.jpg
+------siabBoundary--
+
+### 6. Rodar o pipeline completo de reconhecimento (Fases 1 a 5)
+POST {{baseUrl}}/api/recognition/scan
+Content-Type: multipart/form-data; boundary=----siabBoundary
+
+------siabBoundary
+Content-Disposition: form-data; name="imagem"; filename="rosto.jpg"
+Content-Type: image/jpeg
+
+< ./src/test/resources/fixtures/rosto-exemplo.jpg
+------siabBoundary--
+
+### 7. Consultar logs de acesso
+GET {{baseUrl}}/api/admin/logs
+Authorization: Bearer {{token}}
+
+### 8. Obter a foto de referência de um cadastro (troque o id)
+GET {{baseUrl}}/api/admin/rostos/1/imagem
+Authorization: Bearer {{token}}
+
+### 9. Resumo numérico de acessos (dashboard)
+GET {{baseUrl}}/api/admin/reports/access-summary
+Authorization: Bearer {{token}}
+
+### 10. Exportar relatório de auditoria em PDF (filtros opcionais)
+GET {{baseUrl}}/api/admin/reports/access-log.pdf?dataInicio=2026-01-01&dataFim=2026-12-31
+Authorization: Bearer {{token}}

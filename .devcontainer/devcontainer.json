@@ -1,0 +1,22 @@
+{
+  "name": "SIAB Backend (Java 25)",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "25",
+      "installMaven": true
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-spring-boot",
+        "humao.rest-client"
+      ]
+    }
+  },
+  "forwardPorts": [8080],
+  "postCreateCommand": "mvn -q -DskipTests dependency:go-offline",
+  "remoteUser": "vscode"
+}

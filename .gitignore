@@ -1,0 +1,13 @@
+target/
+*.class
+.idea/
+*.iml
+.vscode/
+.env
+.DS_Store
+HELP.md
+
+# Dados biométricos sensíveis (LGPD) - não versionar fotos reais de rosto
+src/test/resources/fixtures/*
+!src/test/resources/fixtures/LEIA-ME.txt
+

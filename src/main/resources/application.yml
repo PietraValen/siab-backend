@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: siab-backend
+
+  datasource:
+    # Conexão com o MySQL gerenciado no Aiven (SSL obrigatório).
+    # Todos os valores vêm de variáveis de ambiente - preencha um .env local
+    # (não versionado) ou as env vars da VM/Podman com os dados reais.
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}?sslMode=REQUIRED&serverTimezone=UTC
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # "update" é conveniente em desenvolvimento; trocar para "validate"
+      # quando o modelo de dados estiver estável, usando migrations
+      # (ex.: Flyway) para versionar alterações de schema.
+      ddl-auto: update
+    # Sem isso, o Spring Boot roda data.sql ANTES do Hibernate criar/
+    # atualizar o schema — funciona por acidente quando as tabelas já
+    # existem de uma execução anterior, mas falha ("Table ... doesn't
+    # exist") na primeira vez que a aplicação sobe contra um banco
+    # realmente vazio (ex.: uma instância nova do Aiven).
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+
+  sql:
+    init:
+      mode: always # roda data.sql para semear os 3 níveis de acesso
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: ${SERVER_PORT:8080}
+
+siab:
+  security:
+    jwt-secret: ${JWT_SECRET:troque-este-segredo-antes-de-ir-para-producao-min-32-chars}
+    jwt-expiration-ms: 86400000
+  pipeline:
+    haarcascade-path: classpath:haarcascades/haarcascade_frontalface_default.xml
+    recognition-threshold: 0.35
+    liveness-variance-threshold: 80.0
+
+logging:
+  level:
+    br.edu.unip.siab: DEBUG

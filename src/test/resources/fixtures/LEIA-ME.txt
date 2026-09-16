@@ -1,0 +1,15 @@
+Coloque aqui fotos de rosto reais (dos próprios integrantes do grupo, com
+consentimento) para usar nos testes manuais via requests.http e nos testes
+automatizados de integração da Fase 3/4/5.
+
+Sugestão de nomes:
+- rosto-exemplo.jpg      -> usada nos exemplos do requests.http
+- rosto-mesma-pessoa-2.jpg -> segunda foto da mesma pessoa de rosto-exemplo.jpg,
+  útil para testar se a Fase 4 aproxima capturas da mesma pessoa
+- rosto-pessoa-diferente.jpg -> foto de outra pessoa, para testar se a Fase 5
+  corretamente NÃO reconhece como sendo a mesma
+
+Não versionar fotos reais de rosto em um repositório público sem consentimento
+explícito das pessoas fotografadas (é dado biométrico sensível pela LGPD).
+Se o repositório do grupo for público, considere manter esta pasta no
+.gitignore e compartilhar as fotos só localmente entre os integrantes.

@@ -1,0 +1,243 @@
+{
+  "info": {
+    "name": "SIAB Backend",
+    "description": "Collection de requisições da API do SIAB (Sistema de Identificação e Autenticação Biométrica). Importe no Postman/Insomnia. Rode \"1. Login administrativo\" primeiro — o token é salvo automaticamente na variável {{token}} e reaproveitado por todas as outras requisições autenticadas.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "usuarioId", "value": "1", "type": "string" },
+    { "key": "embeddingId", "value": "1", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Autenticação",
+      "item": [
+        {
+          "name": "1. Login administrativo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('token', body.token);",
+                  "    pm.test('token recebido', () => pm.expect(body.token).to.be.a('string').and.not.empty);",
+                  "} else {",
+                  "    pm.test('login OK', () => pm.expect.fail('status ' + pm.response.code));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"TrocarSenha123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "description": "Público. Credencial inicial semeada em data.sql — troque assim que possível via \"Criar administrador\"."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Administradores",
+      "item": [
+        {
+          "name": "Criar administrador",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"novo-admin\",\n  \"senha\": \"SenhaForte123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/administradores", "host": ["{{baseUrl}}"], "path": ["api", "admin", "administradores"] },
+            "description": "senha deve ter no mínimo 8 caracteres. A resposta nunca inclui a senha/hash."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuários",
+      "item": [
+        {
+          "name": "Listar usuários",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/admin/usuarios", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios"] }
+          }
+        },
+        {
+          "name": "Buscar usuário por id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/admin/usuarios/{{usuarioId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios", "{{usuarioId}}"] }
+          }
+        },
+        {
+          "name": "Criar usuário",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('usuarioId', String(pm.response.json().id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Beatriz Novais\",\n  \"cargo\": \"Analista de Segurança\",\n  \"nivelAcessoId\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/usuarios", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios"] },
+            "description": "nivelAcessoId: 1 = Acesso Geral, 2 = Diretoria, 3 = Ministro (ver data.sql). Salva o id criado em {{usuarioId}} para as próximas requisições."
+          }
+        },
+        {
+          "name": "Atualizar usuário",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Beatriz Novais Porfírio\",\n  \"cargo\": \"Coordenadora de Segurança\",\n  \"nivelAcessoId\": 2\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/usuarios/{{usuarioId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios", "{{usuarioId}}"] }
+          }
+        },
+        {
+          "name": "Excluir usuário",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/admin/usuarios/{{usuarioId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios", "{{usuarioId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cadastro e Reconhecimento Facial",
+      "item": [
+        {
+          "name": "Cadastrar rosto (enrollment)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('embeddingId', String(pm.response.json().embeddingId));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "usuarioId", "value": "{{usuarioId}}", "type": "text" },
+                { "key": "imagem", "type": "file", "src": "" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/enrollment", "host": ["{{baseUrl}}"], "path": ["api", "enrollment"] },
+            "description": "Público. Selecione um arquivo de imagem em \"imagem\" (campo tipo File no Postman) antes de enviar. Salva o id do embedding criado em {{embeddingId}}."
+          }
+        },
+        {
+          "name": "Reconhecer rosto (scan)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "imagem", "type": "file", "src": "" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/api/recognition/scan", "host": ["{{baseUrl}}"], "path": ["api", "recognition", "scan"] },
+            "description": "Público. Roda o pipeline completo (fases 1-5 + liveness) e registra a tentativa no log de auditoria."
+          }
+        },
+        {
+          "name": "Obter foto de referência do cadastro",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/admin/rostos/{{embeddingId}}/imagem", "host": ["{{baseUrl}}"], "path": ["api", "admin", "rostos", "{{embeddingId}}", "imagem"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logs de Auditoria",
+      "item": [
+        {
+          "name": "Listar todos os logs",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/admin/logs", "host": ["{{baseUrl}}"], "path": ["api", "admin", "logs"] }
+          }
+        },
+        {
+          "name": "Listar logs por usuário",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/admin/logs/usuario/{{usuarioId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "logs", "usuario", "{{usuarioId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Relatórios",
+      "item": [
+        {
+          "name": "Resumo de acessos",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/admin/reports/access-summary", "host": ["{{baseUrl}}"], "path": ["api", "admin", "reports", "access-summary"] }
+          }
+        },
+        {
+          "name": "Exportar relatório em PDF",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reports/access-log.pdf?usuarioId={{usuarioId}}&dataInicio=2026-01-01&dataFim=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "reports", "access-log.pdf"],
+              "query": [
+                { "key": "usuarioId", "value": "{{usuarioId}}", "disabled": true },
+                { "key": "dataInicio", "value": "2026-01-01", "disabled": true },
+                { "key": "dataFim", "value": "2026-12-31", "disabled": true }
+              ]
+            },
+            "description": "Todos os filtros são opcionais e combináveis (desabilitados por padrão nesta requisição) — sem filtro nenhum, exporta o histórico completo."
+          }
+        }
+      ]
+    }
+  ]
+}

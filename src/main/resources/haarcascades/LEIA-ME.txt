@@ -1,0 +1,13 @@
+Este diretório precisa conter o arquivo "haarcascade_frontalface_default.xml",
+usado pelo SegmentationService (Fase 3 - Segmentação) para detectar rostos.
+
+Como obter (com internet, na máquina de desenvolvimento):
+
+curl -o haarcascade_frontalface_default.xml \
+  https://raw.githubusercontent.com/opencv/opencv/4.x/data/haarcascades/haarcascade_frontalface_default.xml
+
+Coloque o arquivo baixado nesta mesma pasta
+(src/main/resources/haarcascades/) antes de rodar o back-end.
+
+Este arquivo não foi incluído no esqueleto porque o ambiente onde ele foi
+gerado não tem acesso à internet para baixá-lo automaticamente.
