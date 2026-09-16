@@ -4,6 +4,7 @@ import br.edu.unip.siab.auth.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,10 +18,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * Regras de segurança da API.
  * <p>
- * - /api/auth/**            -> público (login do painel administrativo)
- * - /api/enrollment/**      -> público (cadastro facial, Fase 1 do pipeline)
- * - /api/recognition/**     -> público (tela de reconhecimento /scan)
- * - /api/admin/**           -> exige token JWT válido (painel administrativo)
+ * - /api/auth/**                     -> público (login e bootstrap do painel administrativo)
+ * - /api/enrollment/**                -> público (cadastro facial, Fase 1 do pipeline)
+ * - /api/recognition/**                -> público (tela de reconhecimento /scan)
+ * - POST /api/admin/administradores   -> público na camada de filtro; o
+ *   {@link br.edu.unip.siab.admin.AdministradorController} decide na marra
+ *   se exige um JWT autenticado, dependendo de já existir ou não algum
+ *   administrador cadastrado (bootstrap do primeiro admin do sistema).
+ * - /api/admin/**  (restante)          -> exige token JWT válido (painel administrativo)
  * <p>
  * A API é stateless (RNF03 do escopo): nenhuma sessão é mantida no servidor,
  * cada requisição autenticada carrega seu próprio token JWT.
@@ -41,6 +46,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/enrollment/**").permitAll()
                 .requestMatchers("/api/recognition/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/admin/administradores").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .anyRequest().authenticated()

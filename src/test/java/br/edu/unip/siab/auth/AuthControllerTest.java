@@ -2,6 +2,7 @@ package br.edu.unip.siab.auth;
 
 import br.edu.unip.siab.admin.Administrador;
 import br.edu.unip.siab.admin.AdministradorRepository;
+import br.edu.unip.siab.admin.AdministradorService;
 import br.edu.unip.siab.admin.AdministradorUserDetailsService;
 import br.edu.unip.siab.config.SecurityConfig;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Optional;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * dele no construtor) nem instancia.
  */
 @WebMvcTest(AuthController.class)
-@Import({SecurityConfig.class, AdministradorUserDetailsService.class})
+@Import({SecurityConfig.class, AdministradorUserDetailsService.class, AdministradorService.class})
 class AuthControllerTest {
 
     private static final String SENHA_CORRETA = "SenhaCorreta123!";
@@ -104,5 +106,23 @@ class AuthControllerTest {
                         .contentType("application/json")
                         .content(corpo))
                 .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void existeAdministradorRetornaFalseQuandoTabelaVazia() throws Exception {
+        when(administradorRepository.count()).thenReturn(0L);
+
+        mockMvc.perform(get("/api/auth/existe-administrador"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.existe").value(false));
+    }
+
+    @Test
+    void existeAdministradorRetornaTrueQuandoJaHaAdministrador() throws Exception {
+        when(administradorRepository.count()).thenReturn(1L);
+
+        mockMvc.perform(get("/api/auth/existe-administrador"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.existe").value(true));
     }
 }

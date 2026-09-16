@@ -1,0 +1,30 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "siab-backend-dev",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": [
+        "run",
+        "--rm",
+        "--name",
+        "siab-backend-dev",
+        "-v",
+        "/home/himmelsbach/Downloads/siab-backend:/app",
+        "-v",
+        "/home/himmelsbach/.m2:/root/.m2",
+        "-w",
+        "/app",
+        "--env-file",
+        "/home/himmelsbach/Downloads/siab-backend/.env",
+        "-p",
+        "8080:8080",
+        "maven:3.9-eclipse-temurin-25",
+        "mvn",
+        "-B",
+        "spring-boot:run"
+      ],
+      "port": 8080
+    }
+  ]
+}

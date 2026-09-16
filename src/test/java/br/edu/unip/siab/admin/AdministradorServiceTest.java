@@ -55,4 +55,15 @@ class AdministradorServiceTest {
 
         verify(administradorRepository, never()).save(any());
     }
+
+    @Test
+    void existeAdministradorRefleteContagemDoRepositorio() {
+        service = novoServico();
+
+        when(administradorRepository.count()).thenReturn(0L);
+        assertThat(service.existeAdministrador()).isFalse();
+
+        when(administradorRepository.count()).thenReturn(1L);
+        assertThat(service.existeAdministrador()).isTrue();
+    }
 }

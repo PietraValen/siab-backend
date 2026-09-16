@@ -29,4 +29,14 @@ public class AdministradorService {
 
         return administradorRepository.save(administrador);
     }
+
+    /**
+     * Usado tanto pelo endpoint público de bootstrap (GET
+     * /api/auth/existe-administrador) quanto pelo próprio
+     * {@link AdministradorController}, que dispensa JWT na criação apenas
+     * enquanto isto for {@code false}.
+     */
+    public boolean existeAdministrador() {
+        return administradorRepository.count() > 0;
+    }
 }
