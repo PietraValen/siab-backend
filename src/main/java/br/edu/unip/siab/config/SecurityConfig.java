@@ -51,7 +51,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/enrollment/**").permitAll()
                 .requestMatchers("/api/recognition/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/admin/administradores").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 // Sem isso, qualquer exceção não tratada (mesmo em endpoint público)
                 // faz o Spring Boot redespachar a requisição para /error, que por
