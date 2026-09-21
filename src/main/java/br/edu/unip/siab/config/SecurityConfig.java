@@ -14,6 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
  * Regras de segurança da API.
@@ -36,19 +37,30 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/enrollment/**").permitAll()
                 .requestMatchers("/api/recognition/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/admin/administradores").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
+                // Sem isso, qualquer exceção não tratada (mesmo em endpoint público)
+                // faz o Spring Boot redespachar a requisição para /error, que por
+                // sua vez passa de novo pela cadeia de segurança; como só existe
+                // autenticação anônima nesse redespacho, ela falha em
+                // anyRequest().authenticated() e o cliente recebe um 403 confuso
+                // no lugar do erro real (400/404/500). Ver JwtAuthFilter para o
+                // outro lado do mesmo problema (exceção do próprio parsing do JWT).
+                .requestMatchers("/error").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

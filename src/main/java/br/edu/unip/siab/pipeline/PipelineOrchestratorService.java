@@ -16,8 +16,6 @@ import br.edu.unip.siab.user.Usuario;
 import br.edu.unip.siab.user.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.bytedeco.opencv.opencv_core.Mat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,8 +41,6 @@ import static org.bytedeco.opencv.global.opencv_imgcodecs.imdecode;
 @Service
 @RequiredArgsConstructor
 public class PipelineOrchestratorService {
-
-    private static final Logger log = LoggerFactory.getLogger(PipelineOrchestratorService.class);
 
     private final PreprocessingService preprocessingService;
     private final SegmentationService segmentationService;

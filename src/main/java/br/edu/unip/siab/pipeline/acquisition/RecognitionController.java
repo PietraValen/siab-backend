@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -41,15 +42,19 @@ public class RecognitionController {
     public ResponseEntity<?> reconhecer(@Parameter(description = "Frame capturado pela webcam") @RequestParam("imagem") MultipartFile imagem) throws IOException {
         var resultado = pipelineOrchestratorService.reconhecer(imagem);
 
-        return ResponseEntity.ok(Map.of(
-                "acessoConcedido", resultado.acessoConcedido(),
-                "usuario", resultado.usuario().map(u -> Map.of(
-                        "id", u.getId(),
-                        "nome", u.getNome(),
-                        "nivelAcesso", u.getNivelAcesso().getNome()
-                )).orElse(null),
-                "similaridade", resultado.similaridade(),
-                "motivo", resultado.motivo()
-        ));
+        // HashMap (não Map.of): quando o rosto não é reconhecido, "usuario"
+        // é null por contrato com o front-end (ver tipo ScanResult), e
+        // Map.of lança NullPointerException em qualquer valor nulo.
+        Map<String, Object> corpo = new HashMap<>();
+        corpo.put("acessoConcedido", resultado.acessoConcedido());
+        corpo.put("usuario", resultado.usuario().map(u -> Map.of(
+                "id", u.getId(),
+                "nome", u.getNome(),
+                "nivelAcesso", u.getNivelAcesso().getNome()
+        )).orElse(null));
+        corpo.put("similaridade", resultado.similaridade());
+        corpo.put("motivo", resultado.motivo());
+
+        return ResponseEntity.ok(corpo);
     }
 }
