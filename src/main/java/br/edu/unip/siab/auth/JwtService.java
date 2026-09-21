@@ -40,6 +40,7 @@ public class JwtService {
                 .compact();
     }
 
+    @SuppressWarnings("null") // Claims (jjwt) não é anotada com @NonNull/@Nullable; falso positivo do null-analysis do Eclipse
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -49,6 +50,7 @@ public class JwtService {
         return extracted.equals(username) && !isTokenExpired(token);
     }
 
+    @SuppressWarnings("null") // Claims (jjwt) não é anotada com @NonNull/@Nullable; falso positivo do null-analysis do Eclipse
     private boolean isTokenExpired(String token) {
         return extractClaim(token, Claims::getExpiration).before(new Date());
     }
