@@ -13,12 +13,13 @@ import org.springframework.stereotype.Service;
 public class AccessControlService {
 
     /**
-     * TODO: hoje qualquer usuário reconhecido tem acesso concedido ao nível
-     * associado a ele no cadastro. Se o projeto evoluir para múltiplos
-     * "recursos protegidos" (ex.: /cofre/nivel1, /cofre/nivel2), esse
-     * método deve receber também qual recurso está sendo solicitado e
-     * comparar com o nivelAcesso do usuário.
+     * Concede acesso à área solicitada quando o nível do usuário é igual ou
+     * superior ao nível mínimo exigido por ela (ver {@link AreaCofre}).
      */
+    public boolean possuiPermissao(Usuario usuario, AreaCofre area) {
+        return possuiPermissao(usuario, area.getNivelMinimoExigido());
+    }
+
     public boolean possuiPermissao(Usuario usuario, Long nivelAcessoMinimoExigido) {
         if (usuario == null || usuario.getNivelAcesso() == null) {
             return false;

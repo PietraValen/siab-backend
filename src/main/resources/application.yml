@@ -56,7 +56,10 @@ server:
 
 siab:
   security:
-    jwt-secret: ${JWT_SECRET:troque-este-segredo-antes-de-ir-para-producao-min-32-chars}
+    # Sem valor padrão de propósito: um segredo versionado no repositório
+    # permitiria a qualquer um forjar tokens de admin válidos. Sem a env var
+    # JWT_SECRET a aplicação não sobe (ver JwtService#validarSegredo).
+    jwt-secret: ${JWT_SECRET}
     jwt-expiration-ms: ${JWT_EXPIRATION_MS:1800000} # 30 min
     cookie-secure: ${COOKIE_SECURE:true}
     cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}

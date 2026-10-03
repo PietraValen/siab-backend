@@ -156,10 +156,11 @@ serem re-descobertas em sessões futuras.
   o `SpringBeanContainer`, então um `@Component @Converter` recebe beans
   normalmente (é assim que `crypto/Conversores` pega o
   `CifraHibridaService`).
-- **Coluna nova `NOT NULL` + `data.sql`:** o `data.sql` insere
-  administradores sem citar colunas novas; por isso `totpAtivo` usa
-  `@ColumnDefault("false")`. Faça o mesmo em qualquer coluna obrigatória
-  nova de `administradores` ou `niveis_acesso`.
+- **Coluna nova `NOT NULL` em tabela que já tem dados:** o `ddl-auto:
+  update` adiciona a coluna, mas linhas antigas (ou um `INSERT` do
+  `data.sql` que não a cita) quebram sem um default no banco. Por isso
+  `totpAtivo` usa `@ColumnDefault("false")`; faça o mesmo em qualquer
+  coluna obrigatória nova.
 - **`data.sql` rodava antes do Hibernate criar o schema** (`ddl-auto:
   update`), então a semeadura de `niveis_acesso`/`administradores` falhava
   com "Table ... doesn't exist" na primeira vez que a aplicação sobe contra

@@ -46,4 +46,24 @@ class AccessControlServiceTest {
     void usuarioNuloNuncaTemPermissao() {
         assertThat(service.possuiPermissao(null, 1L)).isFalse();
     }
+
+    @Test
+    void areaDaDiretoriaExigeNivelDois() {
+        assertThat(service.possuiPermissao(usuarioComNivel(1L), AreaCofre.DIRETORIA)).isFalse();
+        assertThat(service.possuiPermissao(usuarioComNivel(2L), AreaCofre.DIRETORIA)).isTrue();
+        assertThat(service.possuiPermissao(usuarioComNivel(3L), AreaCofre.DIRETORIA)).isTrue();
+    }
+
+    @Test
+    void areaDoMinistroSoAceitaNivelTres() {
+        assertThat(service.possuiPermissao(usuarioComNivel(2L), AreaCofre.MINISTRO)).isFalse();
+        assertThat(service.possuiPermissao(usuarioComNivel(3L), AreaCofre.MINISTRO)).isTrue();
+    }
+
+    @Test
+    void areaEhLidaSemDiferenciarMaiusculasEVaziaViraGeral() {
+        assertThat(AreaCofre.deValor("diretoria")).isEqualTo(AreaCofre.DIRETORIA);
+        assertThat(AreaCofre.deValor(null)).isEqualTo(AreaCofre.GERAL);
+        assertThat(AreaCofre.deValor(" ")).isEqualTo(AreaCofre.GERAL);
+    }
 }

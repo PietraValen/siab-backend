@@ -6,11 +6,24 @@
 
 @baseUrl = http://localhost:8080
 @adminUser = admin
-@adminPass = TrocarSenha123!
+@adminPass = troque-esta-senha
+
+### 0. Banco novo? Crie o primeiro administrador (sem token)
+# Nenhuma credencial padrão é semeada. Enquanto a tabela de
+# administradores estiver vazia, este cadastro é liberado sem JWT; depois
+# do primeiro, passa a exigir token (ver "3. Criar um novo administrador").
+GET {{baseUrl}}/api/auth/existe-administrador
+
+###
+POST {{baseUrl}}/api/admin/administradores
+Content-Type: application/json
+
+{
+  "username": "{{adminUser}}",
+  "senha": "{{adminPass}}"
+}
 
 ### 1. Login administrativo — copie o token da resposta para usar abaixo
-# Credencial semeada em data.sql para o primeiro acesso; troque assim que
-# possível via "3. Criar um novo administrador".
 # Com MFA ligado, inclua "codigoMfa": "123456" no corpo.
 POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
