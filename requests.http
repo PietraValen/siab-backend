@@ -75,6 +75,10 @@ Content-Disposition: form-data; name="imagem"; filename="rosto.jpg"
 Content-Type: image/jpeg
 
 < ./src/test/resources/fixtures/rosto-exemplo.jpg
+------siabBoundary
+Content-Disposition: form-data; name="area"
+
+GERAL
 ------siabBoundary--
 
 ### 6. Rodar o pipeline completo de reconhecimento (Fases 1 a 5)

@@ -1,5 +1,6 @@
 package br.edu.unip.siab.pipeline.acquisition;
 
+import br.edu.unip.siab.accesscontrol.AreaCofre;
 import br.edu.unip.siab.pipeline.PipelineOrchestratorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -36,11 +37,16 @@ public class RecognitionController {
 
     @Operation(summary = "Tenta reconhecer um rosto e decidir o acesso", description = "Roda pré-processamento, segmentação, verificação de vivacidade, extração de características e comparação contra os embeddings cadastrados; registra a tentativa no log de auditoria independentemente do resultado.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Tentativa processada (o campo acessoConcedido indica o resultado — negado não é erro HTTP)")
+            @ApiResponse(responseCode = "200", description = "Tentativa processada (o campo acessoConcedido indica o resultado — negado não é erro HTTP)"),
+            @ApiResponse(responseCode = "400", description = "Área inválida (aceitos: GERAL, DIRETORIA, MINISTRO)")
     })
     @PostMapping(value = "/scan", consumes = "multipart/form-data")
-    public ResponseEntity<?> reconhecer(@Parameter(description = "Frame capturado pela webcam") @RequestParam("imagem") MultipartFile imagem) throws IOException {
-        var resultado = pipelineOrchestratorService.reconhecer(imagem);
+    public ResponseEntity<?> reconhecer(
+            @Parameter(description = "Frame capturado pela webcam") @RequestParam("imagem") MultipartFile imagem,
+            @Parameter(description = "Área do cofre onde o terminal está instalado (GERAL, DIRETORIA ou MINISTRO). Define o nível mínimo exigido; padrão GERAL.")
+            @RequestParam(value = "area", required = false) String area) throws IOException {
+        AreaCofre areaSolicitada = AreaCofre.deValor(area);
+        var resultado = pipelineOrchestratorService.reconhecer(imagem, areaSolicitada);
 
         // HashMap (não Map.of): quando o rosto não é reconhecido, "usuario"
         // é null por contrato com o front-end (ver tipo ScanResult), e
@@ -54,6 +60,8 @@ public class RecognitionController {
         )).orElse(null));
         corpo.put("similaridade", resultado.similaridade());
         corpo.put("motivo", resultado.motivo());
+        corpo.put("area", areaSolicitada.name());
+        corpo.put("nivelExigido", areaSolicitada.getNivelMinimoExigido());
 
         return ResponseEntity.ok(corpo);
     }
