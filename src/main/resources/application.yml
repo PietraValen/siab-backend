@@ -42,7 +42,10 @@ server:
 
 siab:
   security:
-    jwt-secret: ${JWT_SECRET:troque-este-segredo-antes-de-ir-para-producao-min-32-chars}
+    # Sem valor padrão de propósito: um segredo versionado no repositório
+    # permitiria a qualquer um forjar tokens de admin válidos. Sem a env var
+    # JWT_SECRET a aplicação não sobe (ver JwtService#validarSegredo).
+    jwt-secret: ${JWT_SECRET}
     jwt-expiration-ms: 86400000
   pipeline:
     haarcascade-path: classpath:haarcascades/haarcascade_frontalface_default.xml

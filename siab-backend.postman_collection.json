@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SIAB Backend",
-    "description": "Collection de requisições da API do SIAB (Sistema de Identificação e Autenticação Biométrica). Importe no Postman/Insomnia. Rode \"1. Login administrativo\" primeiro — o token é salvo automaticamente na variável {{token}} e reaproveitado por todas as outras requisições autenticadas.",
+    "description": "Collection de requisições da API do SIAB (Sistema de Identificação e Autenticação Biométrica). Importe no Postman/Insomnia. Num banco novo, rode \"0. Criar primeiro administrador\" uma vez (ajuste adminUser/adminPass antes); depois rode \"1. Login administrativo\" — o token é salvo automaticamente na variável {{token}} e reaproveitado por todas as outras requisições autenticadas.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -12,6 +12,8 @@
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "adminUser", "value": "admin", "type": "string" },
+    { "key": "adminPass", "value": "troque-esta-senha", "type": "string" },
     { "key": "token", "value": "", "type": "string" },
     { "key": "usuarioId", "value": "1", "type": "string" },
     { "key": "embeddingId", "value": "1", "type": "string" }
@@ -20,6 +22,20 @@
     {
       "name": "Autenticação",
       "item": [
+        {
+          "name": "0. Criar primeiro administrador (bootstrap)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"senha\": \"{{adminPass}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/admin/administradores", "host": ["{{baseUrl}}"], "path": ["api", "admin", "administradores"] },
+            "description": "Sem JWT só enquanto não existe nenhum administrador (GET /api/auth/existe-administrador devolve false). Depois disso responde 403 sem token. Nenhuma credencial padrão é semeada pelo data.sql."
+          }
+        },
         {
           "name": "1. Login administrativo",
           "event": [
@@ -45,10 +61,10 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"TrocarSenha123!\"\n}"
+              "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"password\": \"{{adminPass}}\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
-            "description": "Público. Credencial inicial semeada em data.sql — troque assim que possível via \"Criar administrador\"."
+            "description": "Público. Usa adminUser/adminPass, as mesmas do \"0. Criar primeiro administrador\"."
           }
         }
       ]
