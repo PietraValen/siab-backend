@@ -154,7 +154,6 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
             "method": "POST",
             "body": {
               "mode": "formdata",
@@ -164,7 +163,7 @@
               ]
             },
             "url": { "raw": "{{baseUrl}}/api/enrollment", "host": ["{{baseUrl}}"], "path": ["api", "enrollment"] },
-            "description": "Público. Selecione um arquivo de imagem em \"imagem\" (campo tipo File no Postman) antes de enviar. Salva o id do embedding criado em {{embeddingId}}."
+            "description": "Requer JWT (herdado da coleção). Selecione um arquivo de imagem em \"imagem\" (campo tipo File no Postman) antes de enviar. Salva o id do embedding criado em {{embeddingId}}."
           }
         },
         {
