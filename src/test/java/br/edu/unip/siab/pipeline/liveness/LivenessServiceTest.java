@@ -52,25 +52,36 @@ class LivenessServiceTest {
     @Test
     void sequenciaComTexturaEPiscadaEhAprovada() {
         List<Mat> rostos = List.of(criarImagemComRuido(100, 1L), criarImagemComRuido(100, 2L), criarImagemComRuido(100, 3L));
-        assertThat(service.verificarSequencia(rostos).aprovado()).isTrue();
+        assertThat(service.verificarSequencia(rostos, rostos).aprovado()).isTrue();
     }
 
     @Test
     void sequenciaSemPiscadaEhReprovada() {
         piscadaDetectada = false; // foto parada diante da câmera: olhos sempre iguais
         List<Mat> rostos = List.of(criarImagemComRuido(100, 1L), criarImagemComRuido(100, 2L), criarImagemComRuido(100, 3L));
-        assertThat(service.verificarSequencia(rostos).aprovado()).isFalse();
+        assertThat(service.verificarSequencia(rostos, rostos).aprovado()).isFalse();
     }
 
     @Test
     void frameUnicoEhReprovadoQuandoAPiscadaEhExigida() {
-        assertThat(service.verificarSequencia(List.of(criarImagemComRuido(100, 1L))).aprovado()).isFalse();
+        assertThat(service.verificarSequencia(List.of(criarImagemComRuido(100, 1L)), List.of(criarImagemComRuido(100, 1L))).aprovado()).isFalse();
     }
 
     @Test
     void sequenciaLisaEhReprovadaMesmoComPiscada() {
         Mat lisa = new Mat(100, 100, CV_8UC1, new Scalar(128));
-        assertThat(service.verificarSequencia(List.of(lisa, lisa, lisa)).aprovado()).isFalse();
+        assertThat(service.verificarSequencia(List.of(lisa, lisa, lisa), List.of(lisa, lisa, lisa)).aprovado()).isFalse();
+    }
+
+    @Test
+    void texturaEhMedidaNosRecortesSemEqualizacao() {
+        // Foto impressa: a imagem equalizada ganha contraste e parece ter
+        // textura, mas o recorte original em cinza é liso — deve reprovar.
+        List<Mat> equalizados = List.of(criarImagemComRuido(100, 1L), criarImagemComRuido(100, 2L), criarImagemComRuido(100, 3L));
+        Mat lisa = new Mat(100, 100, CV_8UC1, new Scalar(128));
+        var resultado = service.verificarSequencia(equalizados, List.of(lisa, lisa, lisa));
+        assertThat(resultado.aprovado()).isFalse();
+        assertThat(resultado.motivo()).contains("Textura insuficiente");
     }
 
     @Test

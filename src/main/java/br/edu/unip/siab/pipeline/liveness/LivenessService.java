@@ -44,7 +44,7 @@ import static org.bytedeco.opencv.global.opencv_imgproc.Laplacian;
  * derrotada por uma tela de alta resolução ou uma impressão de boa
  * qualidade. Por isso o /scan agora manda uma sequência curta de frames
  * capturada enquanto a tela pede "pisque", e
- * {@link #verificarSequencia(List)} exige, além da textura, uma piscada
+ * {@link #verificarSequencia(List, List)} exige, além da textura, uma piscada
  * detectada pelo {@link DetectorDePiscada} — a alternativa "detecção de
  * piscar" que a seção 3.3 do escopo já previa.
  */
@@ -83,14 +83,26 @@ public class LivenessService {
     /**
      * Liveness da sequência de recortes de rosto (um por frame, na ordem de
      * captura): textura do melhor frame + piscada ao longo da sequência.
+     *
+     * @param rostos               recortes da imagem pré-processada (Fase 2,
+     *                             equalizada) — usados na detecção de piscada,
+     *                             que procura os olhos com o mesmo tipo de
+     *                             classificador Haar da Fase 3
+     * @param rostosSemEqualizacao os mesmos recortes, na mesma ordem, tirados
+     *                             da imagem só convertida para cinza — usados
+     *                             na análise textural. A equalização de
+     *                             histograma estica o contraste e infla a
+     *                             variância do Laplaciano, então medi-la na
+     *                             imagem equalizada deixaria uma foto impressa
+     *                             (lisa) passar com mais facilidade.
      */
-    public Resultado verificarSequencia(List<Mat> rostos) {
+    public Resultado verificarSequencia(List<Mat> rostos, List<Mat> rostosSemEqualizacao) {
         int minimo = exigirPiscada ? framesMinimos : 1;
         if (rostos.size() < minimo) {
             return new Resultado(false, "Rosto detectado em " + rostos.size() + " frame(s); mínimo " + minimo + ".");
         }
 
-        double melhorVariancia = rostos.stream().mapToDouble(this::varianciaDoLaplaciano).max().orElse(0);
+        double melhorVariancia = rostosSemEqualizacao.stream().mapToDouble(this::varianciaDoLaplaciano).max().orElse(0);
         if (melhorVariancia < varianciaMinima) {
             return new Resultado(false, String.format("Textura insuficiente (variância %.1f < %.1f).", melhorVariancia, varianciaMinima));
         }
@@ -101,7 +113,11 @@ public class LivenessService {
         return new Resultado(true, "Vivacidade confirmada.");
     }
 
-    /** Índice do frame mais nítido — o usado nas fases 4 e 5. */
+    /**
+     * Índice do frame mais nítido — o usado nas fases 4 e 5. Recebe os
+     * recortes sem equalização, pelo mesmo motivo de
+     * {@link #verificarSequencia(List, List)}.
+     */
     public int indiceMaisNitido(List<Mat> rostos) {
         int melhor = 0;
         double maior = -1;
