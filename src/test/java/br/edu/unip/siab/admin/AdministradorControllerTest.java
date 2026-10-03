@@ -1,5 +1,6 @@
 package br.edu.unip.siab.admin;
 
+import br.edu.unip.siab.auditlog.AuditoriaAdminService;
 import br.edu.unip.siab.admin.dto.AdministradorRequest;
 import br.edu.unip.siab.auth.JwtAuthFilter;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,9 @@ class AdministradorControllerTest {
     @MockitoBean
     private JwtAuthFilter jwtAuthFilter;
 
+    @MockitoBean
+    private AuditoriaAdminService auditoriaAdminService;
+
     private Administrador administradorCriado() {
         Administrador administrador = new Administrador();
         administrador.setId(1L);
@@ -48,6 +52,7 @@ class AdministradorControllerTest {
     @WithMockUser
     void criarNaoExpoeSenhaNaResposta() throws Exception {
         when(administradorService.criar(any(AdministradorRequest.class))).thenReturn(administradorCriado());
+        when(administradorService.criarPrimeiro(any(AdministradorRequest.class))).thenReturn(administradorCriado());
 
         String corpo = """
                 { "username": "novo-admin", "senha": "SenhaForte123!" }
@@ -67,6 +72,8 @@ class AdministradorControllerTest {
     @WithMockUser
     void criarComUsernameDuplicadoFalha() throws Exception {
         when(administradorService.criar(any(AdministradorRequest.class)))
+                .thenThrow(new UsernameJaCadastradoException("novo-admin"));
+        when(administradorService.criarPrimeiro(any(AdministradorRequest.class)))
                 .thenThrow(new UsernameJaCadastradoException("novo-admin"));
 
         String corpo = """

@@ -1,5 +1,6 @@
 package br.edu.unip.siab.pipeline.feature;
 
+import br.edu.unip.siab.auditlog.AuditoriaAdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -31,6 +32,7 @@ import static br.edu.unip.siab.config.OpenApiConfig.ESQUEMA_JWT;
 public class FaceEmbeddingController {
 
     private final FaceEmbeddingImagemRepository faceEmbeddingImagemRepository;
+    private final AuditoriaAdminService auditoria;
 
     @Operation(summary = "Obtém a foto de referência de um cadastro facial", description = "O id é o mesmo 'embeddingId' retornado por POST /api/enrollment no momento do cadastro.")
     @ApiResponses({
@@ -39,6 +41,8 @@ public class FaceEmbeddingController {
     })
     @GetMapping("/{embeddingId}/imagem")
     public ResponseEntity<byte[]> obterImagem(@Parameter(description = "Id do FaceEmbedding") @PathVariable Long embeddingId) {
+        // LGPD: cada visualização de foto biométrica fica na trilha de auditoria.
+        auditoria.registrar("FOTO_BIOMETRICA_VISUALIZADA", "embedding=" + embeddingId);
         return faceEmbeddingImagemRepository.findByFaceEmbeddingId(embeddingId)
                 .map(imagem -> ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(imagem.getContentType()))

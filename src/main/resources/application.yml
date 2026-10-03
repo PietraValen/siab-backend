@@ -6,7 +6,13 @@ spring:
     # Conexão com o MySQL gerenciado no Aiven (SSL obrigatório).
     # Todos os valores vêm de variáveis de ambiente - preencha um .env local
     # (não versionado) ou as env vars da VM/Podman com os dados reais.
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}?sslMode=REQUIRED&serverTimezone=UTC
+    #
+    # DB_SSL_MODE: REQUIRED cifra a conexão mas NÃO confere o certificado do
+    # servidor (permite um intermediário se passar pelo banco). O ideal é
+    # VERIFY_IDENTITY, que exige o CA do Aiven num truststore — ver
+    # "Banco de dados" em docs/seguranca.md. Mantido REQUIRED como padrão
+    # para não derrubar quem ainda não configurou o CA.
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}?sslMode=${DB_SSL_MODE:REQUIRED}&serverTimezone=UTC${DB_SSL_EXTRA:}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -39,6 +45,14 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  # "framework" faz getRemoteAddr()/isSecure() refletirem o cliente real
+  # quando a API está atrás do proxy reverso (deploy/). Sem proxy, deixe
+  # "none": senão qualquer cliente forja X-Forwarded-For e escapa do
+  # rate limiting.
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
+  error:
+    include-stacktrace: never
+    include-message: never
 
 siab:
   security:
@@ -46,11 +60,39 @@ siab:
     # permitiria a qualquer um forjar tokens de admin válidos. Sem a env var
     # JWT_SECRET a aplicação não sobe (ver JwtService#validarSegredo).
     jwt-secret: ${JWT_SECRET}
-    jwt-expiration-ms: 86400000
+    jwt-expiration-ms: ${JWT_EXPIRATION_MS:1800000} # 30 min
+    cookie-secure: ${COOKIE_SECURE:true}
+    cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  crypto:
+    # Chaves híbridas (ver docs/seguranca.md). Gere com:
+    #   java scripts/GerarChaves.java
+    chaves-cifra: ${SIAB_CHAVES_CIFRA:}           # X25519 + ML-KEM-768 (biometria em repouso)
+    chaves-assinatura: ${SIAB_CHAVES_ASSINATURA:} # Ed25519 + ML-DSA-65 (selos da auditoria)
   pipeline:
     haarcascade-path: classpath:haarcascades/haarcascade_frontalface_default.xml
+    eye-cascade-path: classpath:haarcascades/haarcascade_eye.xml
     recognition-threshold: 0.35
     liveness-variance-threshold: 80.0
+    liveness-exigir-piscada: ${LIVENESS_EXIGIR_PISCADA:true}
+    liveness-frames-minimos: 3
+    frames-maximos: 12
+  upload:
+    dimensao-maxima: 4096
+  terminal:
+    desafio-validade-segundos: 60
+    tolerancia-relogio-segundos: 60
+  pin:
+    nivel-minimo-que-exige: 3 # Ministro
+    bloqueio-minutos: 15
+  login:
+    falhas-antes-do-bloqueio: 5
+    bloqueio-maximo-minutos: 15
+  rate-limit:
+    login-por-minuto: 10
+    reconhecimento-por-minuto: 30
+  auditoria:
+    selagem-automatica: true
+    intervalo-selagem-ms: 3600000 # 1 h
 
 logging:
   level:

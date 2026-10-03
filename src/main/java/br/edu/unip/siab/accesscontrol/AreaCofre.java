@@ -6,10 +6,12 @@ package br.edu.unip.siab.accesscontrol;
  * {@code niveis_acesso} semeados em data.sql: 1 = Acesso Geral,
  * 2 = Diretoria, 3 = Ministro.
  * <p>
- * A tela /scan informa em qual área o terminal está instalado e o
- * {@link AccessControlService} compara esse nível com o do usuário
- * reconhecido — um usuário de nível superior também entra nas áreas de
- * nível inferior.
+ * No /scan, o nível exigido vem do terminal cadastrado
+ * ({@code Terminal#getNivelExigido}), não de um parâmetro enviado pelo
+ * cliente — senão um quiosque da porta Geral poderia pedir acesso de
+ * Ministro (docs/seguranca.md, seção 1.1). Este enum continua como
+ * vocabulário das áreas; um usuário de nível superior também entra nas
+ * áreas de nível inferior.
  */
 public enum AreaCofre {
     GERAL(1L),

@@ -1,5 +1,6 @@
 package br.edu.unip.siab.pipeline.feature;
 
+import br.edu.unip.siab.crypto.Conversores;
 import br.edu.unip.siab.user.Usuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,10 @@ import java.time.LocalDateTime;
  * O vetor é serializado como uma string de números separados por vírgula
  * (formato simples, fácil de auditar/exportar). Se o volume de dados
  * justificar, pode-se migrar para um tipo BLOB/JSON binário mais compacto.
+ * <p>
+ * Gravado cifrado (X25519 + ML-KEM-768 / AES-256-GCM, ver
+ * {@link br.edu.unip.siab.crypto.CifraHibridaService}): o vetor é dado
+ * biométrico e, sozinho, já basta para tentar se passar por alguém.
  */
 @Entity
 @Table(name = "face_embeddings")
@@ -37,6 +42,7 @@ public class FaceEmbedding {
 
     @Lob
     @Column(nullable = false)
+    @Convert(converter = Conversores.VetorFacial.class)
     private String vetor; // ex.: "0.123,-0.045,0.998,..."
 
     @Column(nullable = false)

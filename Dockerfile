@@ -24,7 +24,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libgtk2.0-0 libcanberra-gtk-module libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /app/target/siab-backend.jar app.jar
+# Roda como usuário sem privilégios (seção 3 do roteiro de segurança): uma
+# falha explorada no processo Java não vira root dentro do container.
+RUN useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin siab
 
+COPY --from=build --chown=root:root /app/target/siab-backend.jar app.jar
+
+# Perfil "prod": sem Swagger e com log INFO (ver application-prod.yml).
+ENV SPRING_PROFILES_ACTIVE=prod
+
+USER siab
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

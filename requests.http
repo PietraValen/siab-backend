@@ -24,6 +24,7 @@ Content-Type: application/json
 }
 
 ### 1. Login administrativo — copie o token da resposta para usar abaixo
+# Com MFA ligado, inclua "codigoMfa": "123456" no corpo.
 POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
@@ -59,6 +60,16 @@ Content-Type: application/json
   "nivelAcessoId": 1
 }
 
+### 4b. Cadastrar um terminal de reconhecimento (a "chave" aparece só aqui)
+POST {{baseUrl}}/api/admin/terminais
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Porta principal",
+  "nivelExigidoId": 1
+}
+
 ### 5. Cadastrar rosto (Fase 1 a 4) — troque usuarioId e o caminho da imagem
 # No VS Code REST Client, multipart precisa de um arquivo real no disco.
 # Guarde o "embeddingId" da resposta para usar no passo 8.
@@ -75,22 +86,15 @@ Content-Disposition: form-data; name="imagem"; filename="rosto.jpg"
 Content-Type: image/jpeg
 
 < ./src/test/resources/fixtures/rosto-exemplo.jpg
-------siabBoundary
-Content-Disposition: form-data; name="area"
-
-GERAL
 ------siabBoundary--
 
-### 6. Rodar o pipeline completo de reconhecimento (Fases 1 a 5)
-POST {{baseUrl}}/api/recognition/scan
-Content-Type: multipart/form-data; boundary=----siabBoundary
-
-------siabBoundary
-Content-Disposition: form-data; name="imagem"; filename="rosto.jpg"
-Content-Type: image/jpeg
-
-< ./src/test/resources/fixtures/rosto-exemplo.jpg
-------siabBoundary--
+### 6. Reconhecimento (Fases 1 a 5) — requisição assinada pelo terminal
+# O /scan exige nonce + HMAC com a chave do terminal (docs/seguranca.md,
+# seção 1), então não dá para mandar daqui. Use o script:
+#   java scripts/ScanAssinado.java {{baseUrl}} <terminalId> <chave> f1.jpg f2.jpg f3.jpg
+# Abaixo, só o primeiro passo (pedir o desafio):
+GET {{baseUrl}}/api/recognition/desafio
+X-Terminal-Id: 1
 
 ### 7. Consultar logs de acesso
 GET {{baseUrl}}/api/admin/logs
@@ -106,4 +110,12 @@ Authorization: Bearer {{token}}
 
 ### 10. Exportar relatório de auditoria em PDF (filtros opcionais)
 GET {{baseUrl}}/api/admin/reports/access-log.pdf?dataInicio=2026-01-01&dataFim=2026-12-31
+Authorization: Bearer {{token}}
+
+### 11. Verificar a integridade da auditoria (corrente de hashes + selos)
+GET {{baseUrl}}/api/admin/auditoria/verificacao
+Authorization: Bearer {{token}}
+
+### 12. Encerrar a sessão (revoga o token)
+POST {{baseUrl}}/api/auth/logout
 Authorization: Bearer {{token}}

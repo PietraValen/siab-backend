@@ -1,5 +1,7 @@
 package br.edu.unip.siab.reporting;
 
+import br.edu.unip.siab.auditlog.cadeia.CadeiaAuditoriaService;
+import br.edu.unip.siab.auditlog.AuditoriaAdminService;
 import br.edu.unip.siab.auditlog.AccessLog;
 import br.edu.unip.siab.auditlog.AccessLogService;
 import br.edu.unip.siab.auth.JwtAuthFilter;
@@ -41,6 +43,12 @@ class ReportControllerTest {
     @MockitoBean
     private JwtAuthFilter jwtAuthFilter;
 
+    @MockitoBean
+    private CadeiaAuditoriaService cadeiaAuditoriaService;
+
+    @MockitoBean
+    private AuditoriaAdminService auditoriaAdminService;
+
     private AccessLog logConcedido() {
         AccessLog log = new AccessLog();
         log.setResultado(AccessLog.Resultado.CONCEDIDO);
@@ -70,7 +78,7 @@ class ReportControllerTest {
     void exportarRelatorioPdfRetornaPdfParaDownload() throws Exception {
         byte[] pdfFalso = "%PDF-conteudo-fake".getBytes();
         when(accessLogService.listarComFiltros(isNull(), isNull(), isNull())).thenReturn(List.of());
-        when(reportPdfService.gerarRelatorioDeAcessos(any())).thenReturn(pdfFalso);
+        when(reportPdfService.gerarRelatorioDeAcessos(any(), any())).thenReturn(pdfFalso);
 
         mockMvc.perform(get("/api/admin/reports/access-log.pdf"))
                 .andExpect(status().isOk())
@@ -84,7 +92,7 @@ class ReportControllerTest {
     void exportarRelatorioPdfComFiltroDeUsuario() throws Exception {
         when(accessLogService.listarComFiltros(org.mockito.ArgumentMatchers.eq(5L), isNull(), isNull()))
                 .thenReturn(List.of());
-        when(reportPdfService.gerarRelatorioDeAcessos(any())).thenReturn("%PDF".getBytes());
+        when(reportPdfService.gerarRelatorioDeAcessos(any(), any())).thenReturn("%PDF".getBytes());
 
         mockMvc.perform(get("/api/admin/reports/access-log.pdf").param("usuarioId", "5"))
                 .andExpect(status().isOk());

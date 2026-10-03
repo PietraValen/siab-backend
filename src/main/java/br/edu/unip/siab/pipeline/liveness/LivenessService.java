@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 import static org.bytedeco.opencv.global.opencv_core.CV_64F;
 import static org.bytedeco.opencv.global.opencv_core.meanStdDev;
 import static org.bytedeco.opencv.global.opencv_imgproc.Laplacian;
@@ -37,6 +39,14 @@ import static org.bytedeco.opencv.global.opencv_imgproc.Laplacian;
  * é, portanto, uma medida da quantidade de detalhe fino presente na
  * imagem. Uma variância baixa sugere uma imagem "lisa demais" para ser um
  * rosto real capturado diretamente pela câmera.
+ * <p>
+ * <b>Multi-frame</b> (seção 1.4 do roteiro de segurança): só a textura é
+ * derrotada por uma tela de alta resolução ou uma impressão de boa
+ * qualidade. Por isso o /scan agora manda uma sequência curta de frames
+ * capturada enquanto a tela pede "pisque", e
+ * {@link #verificarSequencia(List)} exige, além da textura, uma piscada
+ * detectada pelo {@link DetectorDePiscada} — a alternativa "detecção de
+ * piscar" que a seção 3.3 do escopo já previa.
  */
 @Service
 public class LivenessService {
@@ -53,6 +63,57 @@ public class LivenessService {
      */
     @Value("${siab.pipeline.liveness-variance-threshold:80.0}")
     private double varianciaMinima;
+
+    /** Desligável para testes manuais frame a frame; ligado por padrão. */
+    @Value("${siab.pipeline.liveness-exigir-piscada:true}")
+    private boolean exigirPiscada = true;
+
+    @Value("${siab.pipeline.liveness-frames-minimos:3}")
+    private int framesMinimos = 3;
+
+    private final DetectorDePiscada detectorDePiscada;
+
+    public LivenessService(DetectorDePiscada detectorDePiscada) {
+        this.detectorDePiscada = detectorDePiscada;
+    }
+
+    public record Resultado(boolean aprovado, String motivo) {
+    }
+
+    /**
+     * Liveness da sequência de recortes de rosto (um por frame, na ordem de
+     * captura): textura do melhor frame + piscada ao longo da sequência.
+     */
+    public Resultado verificarSequencia(List<Mat> rostos) {
+        int minimo = exigirPiscada ? framesMinimos : 1;
+        if (rostos.size() < minimo) {
+            return new Resultado(false, "Rosto detectado em " + rostos.size() + " frame(s); mínimo " + minimo + ".");
+        }
+
+        double melhorVariancia = rostos.stream().mapToDouble(this::varianciaDoLaplaciano).max().orElse(0);
+        if (melhorVariancia < varianciaMinima) {
+            return new Resultado(false, String.format("Textura insuficiente (variância %.1f < %.1f).", melhorVariancia, varianciaMinima));
+        }
+
+        if (exigirPiscada && !detectorDePiscada.houvePiscada(rostos)) {
+            return new Resultado(false, "Nenhuma piscada detectada na sequência.");
+        }
+        return new Resultado(true, "Vivacidade confirmada.");
+    }
+
+    /** Índice do frame mais nítido — o usado nas fases 4 e 5. */
+    public int indiceMaisNitido(List<Mat> rostos) {
+        int melhor = 0;
+        double maior = -1;
+        for (int i = 0; i < rostos.size(); i++) {
+            double v = varianciaDoLaplaciano(rostos.get(i));
+            if (v > maior) {
+                maior = v;
+                melhor = i;
+            }
+        }
+        return melhor;
+    }
 
     public boolean ehRostoReal(Mat imagemCapturada) {
         double variancia = varianciaDoLaplaciano(imagemCapturada);

@@ -2,6 +2,7 @@ package br.edu.unip.siab.admin;
 
 import br.edu.unip.siab.admin.dto.AdministradorRequest;
 import br.edu.unip.siab.admin.dto.AdministradorResponse;
+import br.edu.unip.siab.auditlog.AuditoriaAdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -38,6 +39,7 @@ import static br.edu.unip.siab.config.OpenApiConfig.ESQUEMA_JWT;
 public class AdministradorController {
 
     private final AdministradorService administradorService;
+    private final AuditoriaAdminService auditoria;
 
     @Operation(summary = "Cadastra um novo administrador", description = "A senha é sempre hasheada com BCrypt antes de ser salva; nunca é retornada na resposta. Dispensa JWT apenas quando é o primeiro administrador do sistema (bootstrap).")
     @ApiResponses({
@@ -50,16 +52,16 @@ public class AdministradorController {
     public ResponseEntity<AdministradorResponse> criar(
             @Valid @RequestBody AdministradorRequest request,
             Authentication authentication) {
-        boolean bootstrap = !administradorService.existeAdministrador();
         boolean autenticado = authentication != null
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken);
 
-        if (!bootstrap && !autenticado) {
-            throw new AutenticacaoNecessariaException();
-        }
-
-        var criado = administradorService.criar(request);
+        // Sem JWT, só o bootstrap: criarPrimeiro() confere "tabela vazia" e
+        // grava de forma atômica (lança AutenticacaoNecessariaException se
+        // já existir alguém).
+        var criado = autenticado ? administradorService.criar(request) : administradorService.criarPrimeiro(request);
+        auditoria.registrarComo(autenticado ? authentication.getName() : request.username(),
+                autenticado ? "ADMIN_CRIADO" : "ADMIN_BOOTSTRAP", "username=" + criado.getUsername());
         return ResponseEntity.ok(AdministradorResponse.from(criado));
     }
 }

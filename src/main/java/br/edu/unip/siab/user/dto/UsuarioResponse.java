@@ -9,6 +9,7 @@ public record UsuarioResponse(
         String nome,
         String cargo,
         String nivelAcesso,
+        boolean possuiPin,
         LocalDateTime criadoEm
 ) {
     public static UsuarioResponse from(Usuario u) {
@@ -17,6 +18,7 @@ public record UsuarioResponse(
                 u.getNome(),
                 u.getCargo(),
                 u.getNivelAcesso().getNome(),
+                u.getPinHash() != null,
                 u.getCriadoEm()
         );
     }

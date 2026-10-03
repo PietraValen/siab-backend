@@ -2,6 +2,8 @@ package br.edu.unip.siab.reporting;
 
 import br.edu.unip.siab.auditlog.AccessLog;
 import br.edu.unip.siab.auditlog.AccessLogService;
+import br.edu.unip.siab.auditlog.AuditoriaAdminService;
+import br.edu.unip.siab.auditlog.cadeia.CadeiaAuditoriaService;
 import br.edu.unip.siab.reporting.dto.AccessSummaryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,6 +44,8 @@ public class ReportController {
 
     private final AccessLogService accessLogService;
     private final ReportPdfService reportPdfService;
+    private final CadeiaAuditoriaService cadeiaAuditoriaService;
+    private final AuditoriaAdminService auditoria;
 
     @Operation(summary = "Resumo numérico das tentativas de acesso", description = "Totais de tentativas concedidas/negadas, para o dashboard do painel administrativo.")
     @GetMapping("/access-summary")
@@ -66,7 +70,14 @@ public class ReportController {
         LocalDateTime fim = dataFim != null ? dataFim.atTime(LocalTime.MAX) : null;
 
         List<AccessLog> logs = accessLogService.listarComFiltros(usuarioId, inicio, fim);
-        byte[] pdf = reportPdfService.gerarRelatorioDeAcessos(logs);
+        auditoria.registrar("RELATORIO_EXPORTADO", "usuario=" + usuarioId + " inicio=" + dataInicio + " fim=" + dataFim
+                + " registros=" + logs.size());
+        cadeiaAuditoriaService.selar();
+        ReportPdfService.SeloDoRelatorio selo = cadeiaAuditoriaService.ultimoSelo(CadeiaAuditoriaService.TABELA_ACESSOS)
+                .map(c -> new ReportPdfService.SeloDoRelatorio(c.getId(), c.getUltimoHash(), c.getImpressaoDigital(),
+                        c.getAssinaturaEd25519()))
+                .orElse(null);
+        byte[] pdf = reportPdfService.gerarRelatorioDeAcessos(logs, selo);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=relatorio-acessos.pdf")

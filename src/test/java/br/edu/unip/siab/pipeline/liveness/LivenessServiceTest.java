@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,7 +22,15 @@ import static org.bytedeco.opencv.global.opencv_core.CV_8UC1;
  */
 class LivenessServiceTest {
 
-    private final LivenessService service = new LivenessService();
+    /** Piscada controlada pelo teste — a detecção real de olhos depende do classificador Haar. */
+    private boolean piscadaDetectada = true;
+
+    private final LivenessService service = new LivenessService(new DetectorDePiscada() {
+        @Override
+        public boolean houvePiscada(List<Mat> rostos) {
+            return piscadaDetectada;
+        }
+    });
 
     @BeforeEach
     void setUp() {
@@ -38,6 +47,39 @@ class LivenessServiceTest {
     void imagemLisaSemTexturaEhReprovada() {
         Mat imagemLisa = new Mat(200, 200, CV_8UC1, new Scalar(128));
         assertThat(service.ehRostoReal(imagemLisa)).isFalse();
+    }
+
+    @Test
+    void sequenciaComTexturaEPiscadaEhAprovada() {
+        List<Mat> rostos = List.of(criarImagemComRuido(100, 1L), criarImagemComRuido(100, 2L), criarImagemComRuido(100, 3L));
+        assertThat(service.verificarSequencia(rostos).aprovado()).isTrue();
+    }
+
+    @Test
+    void sequenciaSemPiscadaEhReprovada() {
+        piscadaDetectada = false; // foto parada diante da câmera: olhos sempre iguais
+        List<Mat> rostos = List.of(criarImagemComRuido(100, 1L), criarImagemComRuido(100, 2L), criarImagemComRuido(100, 3L));
+        assertThat(service.verificarSequencia(rostos).aprovado()).isFalse();
+    }
+
+    @Test
+    void frameUnicoEhReprovadoQuandoAPiscadaEhExigida() {
+        assertThat(service.verificarSequencia(List.of(criarImagemComRuido(100, 1L))).aprovado()).isFalse();
+    }
+
+    @Test
+    void sequenciaLisaEhReprovadaMesmoComPiscada() {
+        Mat lisa = new Mat(100, 100, CV_8UC1, new Scalar(128));
+        assertThat(service.verificarSequencia(List.of(lisa, lisa, lisa)).aprovado()).isFalse();
+    }
+
+    @Test
+    void padraoDePiscadaExigeAbertoFechadoAberto() {
+        assertThat(DetectorDePiscada.padraoAbertoFechadoAberto(new boolean[]{true, false, true})).isTrue();
+        assertThat(DetectorDePiscada.padraoAbertoFechadoAberto(new boolean[]{true, true, false, false, true})).isTrue();
+        assertThat(DetectorDePiscada.padraoAbertoFechadoAberto(new boolean[]{true, true, true})).isFalse();
+        assertThat(DetectorDePiscada.padraoAbertoFechadoAberto(new boolean[]{false, false, false})).isFalse();
+        assertThat(DetectorDePiscada.padraoAbertoFechadoAberto(new boolean[]{false, true, false})).isFalse();
     }
 
     private Mat criarImagemComRuido(int dimensao, long seed) {

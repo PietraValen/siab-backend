@@ -1,5 +1,6 @@
 package br.edu.unip.siab.pipeline.acquisition;
 
+import br.edu.unip.siab.auditlog.AuditoriaAdminService;
 import br.edu.unip.siab.pipeline.PipelineOrchestratorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -39,6 +40,7 @@ import static br.edu.unip.siab.config.OpenApiConfig.ESQUEMA_JWT;
 public class EnrollmentController {
 
     private final PipelineOrchestratorService pipelineOrchestratorService;
+    private final AuditoriaAdminService auditoria;
 
     @Operation(summary = "Cadastra a captura facial de um usuário", description = "Roda as fases 2 a 4 do pipeline (pré-processamento, segmentação, extração LBPH) sobre a imagem enviada e salva o embedding resultante, associado ao usuário informado.")
     @ApiResponses({
@@ -51,6 +53,7 @@ public class EnrollmentController {
     public ResponseEntity<?> cadastrarRosto(@Parameter(description = "Id do usuário previamente cadastrado em /api/admin/usuarios") @RequestParam Long usuarioId,
                                              @Parameter(description = "Foto do rosto capturada pela webcam") @RequestParam("imagem") MultipartFile imagem) throws IOException {
         var embedding = pipelineOrchestratorService.cadastrarRosto(usuarioId, imagem);
+        auditoria.registrar("ROSTO_CADASTRADO", "usuario=" + usuarioId + " embedding=" + embedding.getId());
         return ResponseEntity.ok(Map.of(
                 "embeddingId", embedding.getId(),
                 "algoritmo", embedding.getAlgoritmo(),

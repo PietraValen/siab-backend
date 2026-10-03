@@ -1,9 +1,10 @@
 package br.edu.unip.siab.pipeline;
 
 import br.edu.unip.siab.accesscontrol.AccessControlService;
-import br.edu.unip.siab.accesscontrol.AreaCofre;
+import br.edu.unip.siab.accesscontrol.PinService;
 import br.edu.unip.siab.auditlog.AccessLog;
 import br.edu.unip.siab.auditlog.AccessLogService;
+import br.edu.unip.siab.pipeline.acquisition.ValidadorDeImagem;
 import br.edu.unip.siab.pipeline.feature.FaceEmbedding;
 import br.edu.unip.siab.pipeline.feature.FaceEmbeddingImagem;
 import br.edu.unip.siab.pipeline.feature.FaceEmbeddingImagemRepository;
@@ -13,6 +14,7 @@ import br.edu.unip.siab.pipeline.liveness.LivenessService;
 import br.edu.unip.siab.pipeline.preprocessing.PreprocessingService;
 import br.edu.unip.siab.pipeline.recognition.RecognitionService;
 import br.edu.unip.siab.pipeline.segmentation.SegmentationService;
+import br.edu.unip.siab.terminal.Terminal;
 import br.edu.unip.siab.user.Usuario;
 import br.edu.unip.siab.user.UsuarioService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.bytedeco.opencv.global.opencv_imgcodecs.IMREAD_COLOR;
@@ -53,9 +57,27 @@ public class PipelineOrchestratorService {
     private final FaceEmbeddingImagemRepository faceEmbeddingImagemRepository;
     private final AccessLogService accessLogService;
     private final UsuarioService usuarioService;
+    private final ValidadorDeImagem validadorDeImagem;
+    private final PinService pinService;
 
+    /** Mensagem genérica de negação: não diz ao terminal qual verificação falhou (seção 1.2 do roteiro). */
+    public static final String MENSAGEM_NEGADO = "Acesso negado.";
+
+    /**
+     * Uma tentativa de reconhecimento já autenticada pelo terminal: os
+     * frames na ordem de captura, o terminal que os enviou, o PIN digitado
+     * (se a porta pede) e o IP de origem.
+     */
+    public record EntradaScan(List<byte[]> frames, Terminal terminal, String pin, String ip) {
+    }
+
+    /**
+     * {@code motivo} e {@code similaridade} são só para o log de auditoria;
+     * o terminal recebe apenas {@code mensagemPublica} (ver
+     * RecognitionController).
+     */
     public record ResultadoScan(boolean acessoConcedido, Optional<Usuario> usuario,
-                                 double similaridade, String motivo) {
+                                 double similaridade, String motivo, String mensagemPublica) {
     }
 
     /**
@@ -69,6 +91,7 @@ public class PipelineOrchestratorService {
     public FaceEmbedding cadastrarRosto(Long usuarioId, MultipartFile imagem) throws IOException {
         Usuario usuario = usuarioService.buscarPorId(usuarioId);
         byte[] bytesOriginais = imagem.getBytes();
+        validadorDeImagem.validar(bytesOriginais);
 
         Mat imagemBruta = decodificar(bytesOriginais); // Fase 1 - Aquisição
         Mat preProcessada = preprocessingService.processar(imagemBruta); // Fase 2
@@ -98,46 +121,78 @@ public class PipelineOrchestratorService {
     }
 
     /**
-     * Fluxo de RECONHECIMENTO (tela /scan): processa a imagem por todas as
-     * 5 fases, decide o acesso à {@code area} onde o terminal está instalado
-     * e registra a tentativa no log de auditoria.
+     * Fluxo de RECONHECIMENTO (tela /scan): processa cada frame pelas fases
+     * 1 a 3, verifica a vivacidade na sequência inteira (textura + piscada),
+     * leva o frame mais nítido pelas fases 4 e 5, decide o acesso à porta do
+     * terminal (nível exigido + PIN, se for porta de nível máximo) e
+     * registra a tentativa no log de auditoria.
      */
-    public ResultadoScan reconhecer(MultipartFile imagem, AreaCofre area) throws IOException {
-        Mat imagemBruta = decodificar(imagem.getBytes()); // Fase 1 - Aquisição
-        Mat preProcessada = preprocessingService.processar(imagemBruta); // Fase 2
-
-        Optional<Mat> rostoOpt = segmentationService.segmentar(preProcessada); // Fase 3
-        if (rostoOpt.isEmpty()) {
-            accessLogService.registrar(Optional.empty(), AccessLog.Resultado.NEGADO, 0.0);
-            return new ResultadoScan(false, Optional.empty(), 0.0, "Nenhum rosto detectado.");
-        }
-        Mat rosto = rostoOpt.get();
-
-        if (!livenessService.ehRostoReal(rosto)) {
-            accessLogService.registrar(Optional.empty(), AccessLog.Resultado.NEGADO, 0.0);
-            return new ResultadoScan(false, Optional.empty(), 0.0, "Falha na verificação de vivacidade.");
+    public ResultadoScan reconhecer(EntradaScan entrada) {
+        List<Mat> rostos = new ArrayList<>();
+        for (byte[] frame : entrada.frames()) {
+            validadorDeImagem.validar(frame);
+            Mat imagemBruta = decodificar(frame); // Fase 1 - Aquisição
+            Mat preProcessada = preprocessingService.processar(imagemBruta); // Fase 2
+            segmentationService.segmentar(preProcessada).ifPresent(rostos::add); // Fase 3
         }
 
+        if (rostos.isEmpty()) {
+            return negar(entrada, Optional.empty(), 0.0, "Nenhum rosto detectado.",
+                    "Nenhum rosto detectado. Posicione o rosto no centro da câmera.");
+        }
+
+        LivenessService.Resultado vivacidade = livenessService.verificarSequencia(rostos);
+        if (!vivacidade.aprovado()) {
+            return negar(entrada, Optional.empty(), 0.0, "Falha na verificação de vivacidade: " + vivacidade.motivo(), MENSAGEM_NEGADO);
+        }
+
+        Mat rosto = rostos.get(livenessService.indiceMaisNitido(rostos));
         float[] vetor = featureExtractionService.extrair(rosto); // Fase 4
         var resultado = recognitionService.reconhecer(vetor); // Fase 5
 
         if (!resultado.reconhecido()) {
-            accessLogService.registrar(Optional.empty(), AccessLog.Resultado.NEGADO, resultado.similaridade());
-            return new ResultadoScan(false, Optional.empty(), resultado.similaridade(), "Usuário não reconhecido.");
+            return negar(entrada, Optional.empty(), resultado.similaridade(), "Usuário não reconhecido.", MENSAGEM_NEGADO);
         }
 
         Usuario usuario = resultado.usuario().get();
-        boolean autorizado = accessControlService.possuiPermissao(usuario, area);
+        Long nivelExigido = entrada.terminal() != null ? entrada.terminal().getNivelExigido().getId() : 1L;
+        if (!accessControlService.possuiPermissao(usuario, nivelExigido)) {
+            return negar(entrada, Optional.of(usuario), resultado.similaridade(),
+                    "Nível de acesso insuficiente (exigido " + nivelExigido + ").",
+                    "Nível de acesso insuficiente para esta porta.");
+        }
 
-        var resultadoLog = autorizado ? AccessLog.Resultado.CONCEDIDO : AccessLog.Resultado.NEGADO;
-        accessLogService.registrar(Optional.of(usuario), resultadoLog, resultado.similaridade());
+        if (pinService.exigePin(entrada.terminal())) {
+            PinService.Verificacao pin = pinService.verificar(usuario, entrada.pin());
+            if (pin != PinService.Verificacao.OK) {
+                return negar(entrada, Optional.of(usuario), resultado.similaridade(), "Segundo fator: PIN " + pin + ".",
+                        switch (pin) {
+                            case AUSENTE -> "Digite o PIN para esta porta.";
+                            case INCORRETO -> "PIN incorreto.";
+                            case BLOQUEADO -> "PIN bloqueado por excesso de tentativas. Procure a administração.";
+                            default -> MENSAGEM_NEGADO;
+                        });
+            }
+        }
 
-        String motivo = autorizado ? "Acesso concedido." : "Nível de acesso insuficiente.";
-        return new ResultadoScan(autorizado, Optional.of(usuario), resultado.similaridade(), motivo);
+        accessLogService.registrar(new AccessLogService.Tentativa(Optional.of(usuario), AccessLog.Resultado.CONCEDIDO,
+                resultado.similaridade(), "Acesso concedido.", entrada.terminal(), entrada.ip()));
+        return new ResultadoScan(true, Optional.of(usuario), resultado.similaridade(), "Acesso concedido.", "Acesso concedido.");
+    }
+
+    private ResultadoScan negar(EntradaScan entrada, Optional<Usuario> usuario, double similaridade,
+                                String motivo, String mensagemPublica) {
+        accessLogService.registrar(new AccessLogService.Tentativa(usuario, AccessLog.Resultado.NEGADO, similaridade,
+                motivo, entrada.terminal(), entrada.ip()));
+        return new ResultadoScan(false, usuario, similaridade, motivo, mensagemPublica);
     }
 
     private Mat decodificar(byte[] bytes) {
         Mat buffer = new Mat(bytes);
-        return imdecode(buffer, IMREAD_COLOR);
+        Mat imagem = imdecode(buffer, IMREAD_COLOR);
+        if (imagem == null || imagem.empty()) {
+            throw new IllegalArgumentException("Imagem corrompida ou ilegível.");
+        }
+        return imagem;
     }
 }

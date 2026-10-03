@@ -1,5 +1,6 @@
 package br.edu.unip.siab.admin;
 
+import br.edu.unip.siab.auditlog.AuditoriaAdminService;
 import br.edu.unip.siab.auth.JwtService;
 import br.edu.unip.siab.config.SecurityConfig;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,9 @@ class AdministradorBootstrapControllerTest {
     @MockitoBean
     private JwtService jwtService;
 
+    @MockitoBean
+    private AuditoriaAdminService auditoriaAdminService;
+
     private Administrador administradorCriado() {
         Administrador administrador = new Administrador();
         administrador.setId(1L);
@@ -60,8 +64,7 @@ class AdministradorBootstrapControllerTest {
 
     @Test
     void permiteCriarSemTokenQuandoNaoExisteAdministrador() throws Exception {
-        when(administradorService.existeAdministrador()).thenReturn(false);
-        when(administradorService.criar(any())).thenReturn(administradorCriado());
+        when(administradorService.criarPrimeiro(any())).thenReturn(administradorCriado());
 
         mockMvc.perform(post("/api/admin/administradores")
                         .contentType("application/json")
@@ -71,7 +74,7 @@ class AdministradorBootstrapControllerTest {
 
     @Test
     void recusaCriarSemTokenQuandoJaExisteAdministrador() throws Exception {
-        when(administradorService.existeAdministrador()).thenReturn(true);
+        when(administradorService.criarPrimeiro(any())).thenThrow(new AutenticacaoNecessariaException());
 
         mockMvc.perform(post("/api/admin/administradores")
                         .contentType("application/json")

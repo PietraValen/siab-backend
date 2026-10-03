@@ -87,9 +87,24 @@ depois de cada mudança.
 ## Endpoints principais
 | Método | Rota | Descrição |
 |---|---|---|
-| POST | `/api/auth/login` | Login do painel admin, retorna JWT |
-| GET/POST/PUT/DELETE | `/api/admin/usuarios` | CRUD de usuários (requer JWT) |
+| POST | `/api/auth/login` | Login do painel admin (`codigoMfa` se o MFA estiver ligado); grava o cookie `SIAB_TOKEN` e devolve o JWT |
+| POST | `/api/auth/logout` | Revoga o token e apaga o cookie |
+| GET | `/api/auth/csrf` | Token CSRF para chamadas do painel via cookie (header `X-XSRF-TOKEN`) |
+| GET | `/api/admin/sessao` | Admin logado e se o MFA está ativo |
+| POST/DELETE | `/api/admin/mfa/...` | Configurar, ativar e desativar o MFA (TOTP) |
+| GET/POST/PUT/DELETE | `/api/admin/usuarios` | CRUD de usuários, com PIN opcional (requer JWT) |
+| GET/POST/DELETE | `/api/admin/terminais` | Cadastro e revogação de terminais de reconhecimento (requer JWT) |
 | POST | `/api/enrollment` | Cadastra o rosto de um usuário (multipart: `usuarioId`, `imagem`; requer JWT) |
-| POST | `/api/recognition/scan` | Roda o pipeline completo e decide o acesso (multipart: `imagem`) |
+| GET | `/api/recognition/desafio` | Nonce de uso único para o terminal (header `X-Terminal-Id`) |
+| POST | `/api/recognition/scan` | Roda o pipeline e decide o acesso (multipart: `imagens`, `pin`; requisição assinada pelo terminal) |
 | GET | `/api/admin/logs` | Lista o histórico de tentativas (requer JWT) |
+| GET/POST | `/api/admin/auditoria/...` | Verificação da corrente de hashes, selos assinados e ações administrativas |
 | GET | `/api/admin/reports/access-summary` | Resumo de acessos (requer JWT) |
+
+## Segurança
+
+Desde a introdução da criptografia híbrida, a API **só sobe com as chaves
+configuradas**: gere-as com `java scripts/GerarChaves.java` e preencha
+`SIAB_CHAVES_CIFRA`/`SIAB_CHAVES_ASSINATURA` (ver `.env.example`). Detalhes
+de tudo que foi implementado, do protocolo do terminal e do deploy com TLS
+híbrido em [`docs/seguranca.md`](docs/seguranca.md).
