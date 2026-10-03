@@ -1,5 +1,6 @@
 package br.edu.unip.siab.pipeline.acquisition;
 
+import br.edu.unip.siab.auditlog.AuditoriaAdminService;
 import br.edu.unip.siab.auth.JwtService;
 import br.edu.unip.siab.config.SecurityConfig;
 import br.edu.unip.siab.pipeline.PipelineOrchestratorService;
@@ -47,6 +48,9 @@ class EnrollmentSecurityTest {
     // SecurityConfig importado.
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private AuditoriaAdminService auditoriaAdminService;
 
     private final MockMultipartFile imagem =
             new MockMultipartFile("imagem", "captura.jpg", "image/jpeg", new byte[]{1, 2, 3});

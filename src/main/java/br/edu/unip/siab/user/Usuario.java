@@ -35,6 +35,14 @@ public class Usuario {
     @JoinColumn(name = "nivel_acesso_id", nullable = false)
     private NivelAcesso nivelAcesso;
 
+    /**
+     * Hash BCrypt do PIN — segundo fator exigido nas portas de nível
+     * Ministro (seção 1.5 do roteiro de segurança). Nulo = sem PIN
+     * cadastrado (o usuário não passa nessas portas).
+     */
+    @Column(name = "pin_hash")
+    private String pinHash;
+
     @Column(name = "criado_em", nullable = false, updatable = false)
     private LocalDateTime criadoEm = LocalDateTime.now();
 }

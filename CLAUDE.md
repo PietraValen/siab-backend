@@ -30,7 +30,7 @@ Google Vision, etc.). Isso anularia o objetivo acadêmico do trabalho.
 
 | Pacote | Responsabilidade |
 |---|---|
-| `auth/` | Login administrativo via JWT |
+| `auth/` | Login administrativo via JWT (cookie HttpOnly + CSRF, MFA TOTP, revogação) |
 | `admin/` | Administradores do painel (entidade real no banco, ver abaixo) |
 | `user/` | CRUD de usuários e níveis de acesso |
 | `accesslevel/` | Entidade dos 3 níveis (Geral/Diretoria/Ministro) |
@@ -38,11 +38,14 @@ Google Vision, etc.). Isso anularia o objetivo acadêmico do trabalho.
 | `pipeline/segmentation/` | **Fase 3** — detecção facial (Haar Cascade) |
 | `pipeline/feature/` | **Fase 4** — extração de características (LBPH) + foto de referência do cadastro |
 | `pipeline/recognition/` | **Fase 5** — comparação por similaridade |
-| `pipeline/liveness/` | Anti-spoofing (variância do Laplaciano) |
+| `pipeline/liveness/` | Anti-spoofing (variância do Laplaciano + piscada em vários frames) |
 | `pipeline/acquisition/` | **Fase 1** — controllers REST (`/enrollment`, `/recognition/scan`) |
 | `pipeline/PipelineOrchestratorService.java` | Amarra as 5 fases na ordem certa — **não altere a ordem das chamadas** |
-| `accesscontrol/` | Regra de negócio dos 3 níveis |
-| `auditlog/` | Logs de tentativas de acesso |
+| `accesscontrol/` | Regra de negócio dos 3 níveis + PIN do nível Ministro |
+| `auditlog/` | Logs de tentativas e de ações admin, encadeados por hash e selados (`cadeia/`) |
+| `terminal/` | Terminais de reconhecimento: chave HMAC, desafio (nonce) e verificação da assinatura do `/scan` |
+| `crypto/` | Criptografia híbrida: KEM X25519 + ML-KEM-768 (biometria em repouso), assinatura Ed25519 + ML-DSA-65 |
+| `security/` | Rate limiting e bloqueio progressivo de login |
 | `reporting/` | Resumo + relatório de auditoria em PDF (OpenPDF) |
 
 ## Estado atual — o que está pronto vs. pendente
@@ -69,6 +72,18 @@ pipeline.
    real de rosto em `src/test/resources/fixtures/` (com consentimento de
    quem aparece na foto — dado biométrico) e testar
    `service.segmentar(...)` retornando um Mat não vazio fica para o grupo.
+
+## Segurança (ver `docs/seguranca.md`)
+
+- **A API não sobe sem `SIAB_CHAVES_CIFRA` e `SIAB_CHAVES_ASSINATURA`**
+  (gere com `java scripts/GerarChaves.java`). Nos testes,
+  `siab.crypto.chaves-efemeras=true` em `src/test/resources/application.properties`
+  gera chaves descartáveis.
+- O `/api/recognition/scan` só aceita requisições assinadas por um terminal
+  cadastrado; para testar à mão use `scripts/ScanAssinado.java`.
+- `SegurancaIntegracaoTest` sobe o contexto inteiro e cobre CSRF, replay,
+  cifra no banco e detecção de adulteração da auditoria. Rode-o depois de
+  mexer em `auth/`, `terminal/`, `crypto/` ou `auditlog/`.
 
 ## Harness de testes — use isso como guia
 
@@ -137,6 +152,14 @@ serem re-descobertas em sessões futuras.
   (`SegmentationService` é `@Service` com `@PostConstruct`, carregado
   eager). Corrigido instalando `libgtk2.0-0 libcanberra-gtk-module libgl1
   libglib2.0-0` no estágio de runtime do `Dockerfile`.
+- **Converters JPA com injeção de dependência:** no Boot 4, o Hibernate usa
+  o `SpringBeanContainer`, então um `@Component @Converter` recebe beans
+  normalmente (é assim que `crypto/Conversores` pega o
+  `CifraHibridaService`).
+- **Coluna nova `NOT NULL` + `data.sql`:** o `data.sql` insere
+  administradores sem citar colunas novas; por isso `totpAtivo` usa
+  `@ColumnDefault("false")`. Faça o mesmo em qualquer coluna obrigatória
+  nova de `administradores` ou `niveis_acesso`.
 - **`data.sql` rodava antes do Hibernate criar o schema** (`ddl-auto:
   update`), então a semeadura de `niveis_acesso`/`administradores` falhava
   com "Table ... doesn't exist" na primeira vez que a aplicação sobe contra
@@ -170,7 +193,8 @@ export $(cat .env | xargs)  # ou configurar as env vars na sua IDE
 mvn spring-boot:run       # sobe em http://localhost:8080
 ```
 
-Swagger em `http://localhost:8080/swagger-ui.html` — todos os endpoints
+Swagger em `http://localhost:8080/swagger-ui.html` (desligado no perfil
+`prod`, que o `Dockerfile` ativa) — todos os endpoints
 anotados (`@Tag`/`@Operation`), com botão "Authorize" já configurado para
 Bearer JWT (cole o token de `POST /api/auth/login`).
 

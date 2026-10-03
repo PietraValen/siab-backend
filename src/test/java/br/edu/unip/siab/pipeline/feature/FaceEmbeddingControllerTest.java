@@ -1,5 +1,6 @@
 package br.edu.unip.siab.pipeline.feature;
 
+import br.edu.unip.siab.auditlog.AuditoriaAdminService;
 import br.edu.unip.siab.auth.JwtAuthFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ class FaceEmbeddingControllerTest {
 
     @MockitoBean
     private JwtAuthFilter jwtAuthFilter;
+
+    @MockitoBean
+    private AuditoriaAdminService auditoriaAdminService;
 
     @Test
     @WithMockUser

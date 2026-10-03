@@ -4,17 +4,13 @@
     "description": "Collection de requisições da API do SIAB (Sistema de Identificação e Autenticação Biométrica). Importe no Postman/Insomnia. Rode \"1. Login administrativo\" primeiro — o token é salvo automaticamente na variável {{token}} e reaproveitado por todas as outras requisições autenticadas.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      { "key": "token", "value": "{{token}}", "type": "string" }
-    ]
-  },
+  "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
     { "key": "token", "value": "", "type": "string" },
     { "key": "usuarioId", "value": "1", "type": "string" },
-    { "key": "embeddingId", "value": "1", "type": "string" }
+    { "key": "embeddingId", "value": "1", "type": "string" },
+    { "key": "terminalId", "value": "1", "type": "string" }
   ],
   "item": [
     {
@@ -48,7 +44,47 @@
               "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"TrocarSenha123!\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
-            "description": "Público. Credencial inicial semeada em data.sql — troque assim que possível via \"Criar administrador\"."
+            "description": "Público. Credencial inicial semeada em data.sql — troque assim que possível via \"Criar administrador\". Se o admin ligou o MFA, inclua \"codigoMfa\": \"123456\" no corpo (sem ele a resposta é 401 com mfaNecessario: true)."
+          }
+        },
+        {
+          "name": "Logout (revoga o token)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "auth", "logout"] },
+            "description": "Revoga o token atual e apaga o cookie SIAB_TOKEN."
+          }
+        },
+        {
+          "name": "Sessão atual",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/admin/sessao", "host": ["{{baseUrl}}"], "path": ["api", "admin", "sessao"] },
+            "description": "Admin logado e se o MFA está ativo."
+          }
+        },
+        {
+          "name": "Configurar MFA (TOTP)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/admin/mfa/configurar", "host": ["{{baseUrl}}"], "path": ["api", "admin", "mfa", "configurar"] },
+            "description": "Devolve o segredo e a URI otpauth:// para o app autenticador. Depois confirme em \"Ativar MFA\"."
+          }
+        },
+        {
+          "name": "Ativar MFA",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/admin/mfa/ativar", "host": ["{{baseUrl}}"], "path": ["api", "admin", "mfa", "ativar"] },
+            "description": "Confirma o MFA com um código do app autenticador.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"123456\"\n}"
+            }
           }
         }
       ]
@@ -85,7 +121,11 @@
           "name": "Buscar usuário por id",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/admin/usuarios/{{usuarioId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios", "{{usuarioId}}"] }
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/usuarios/{{usuarioId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "usuarios", "{{usuarioId}}"]
+            }
           }
         },
         {
@@ -111,7 +151,7 @@
               "raw": "{\n  \"nome\": \"Beatriz Novais\",\n  \"cargo\": \"Analista de Segurança\",\n  \"nivelAcessoId\": 1\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/admin/usuarios", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios"] },
-            "description": "nivelAcessoId: 1 = Acesso Geral, 2 = Diretoria, 3 = Ministro (ver data.sql). Salva o id criado em {{usuarioId}} para as próximas requisições."
+            "description": "nivelAcessoId: 1 = Acesso Geral, 2 = Diretoria, 3 = Ministro (ver data.sql). Salva o id criado em {{usuarioId}} para as próximas requisições. Opcional: \"pin\" (4 a 8 dígitos), exigido junto com o rosto em terminais de nível 3 (Ministro)."
           }
         },
         {
@@ -123,14 +163,75 @@
               "mode": "raw",
               "raw": "{\n  \"nome\": \"Beatriz Novais Porfírio\",\n  \"cargo\": \"Coordenadora de Segurança\",\n  \"nivelAcessoId\": 2\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/admin/usuarios/{{usuarioId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios", "{{usuarioId}}"] }
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/usuarios/{{usuarioId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "usuarios", "{{usuarioId}}"]
+            }
           }
         },
         {
           "name": "Excluir usuário",
           "request": {
             "method": "DELETE",
-            "url": { "raw": "{{baseUrl}}/api/admin/usuarios/{{usuarioId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "usuarios", "{{usuarioId}}"] }
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/usuarios/{{usuarioId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "usuarios", "{{usuarioId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Terminais",
+      "item": [
+        {
+          "name": "Cadastrar terminal",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/admin/terminais", "host": ["{{baseUrl}}"], "path": ["api", "admin", "terminais"] },
+            "description": "Cria um terminal de reconhecimento. A chave HMAC aparece só nesta resposta: guarde-a no quiosque. Salva o id em {{terminalId}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Porta principal\",\n  \"nivelExigidoId\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    pm.collectionVariables.set('terminalId', String(pm.response.json().terminal.id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar terminais",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/admin/terminais", "host": ["{{baseUrl}}"], "path": ["api", "admin", "terminais"] },
+            "description": "Terminais cadastrados (sem as chaves)."
+          }
+        },
+        {
+          "name": "Revogar terminal",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/terminais/{{terminalId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "terminais", "{{terminalId}}"]
+            },
+            "description": "Desativa o terminal; os próximos scans dele recebem 401."
           }
         }
       ]
@@ -167,25 +268,24 @@
           }
         },
         {
-          "name": "Reconhecer rosto (scan)",
+          "name": "Pedir desafio do terminal",
           "request": {
             "auth": { "type": "noauth" },
-            "method": "POST",
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                { "key": "imagem", "type": "file", "src": "" }
-              ]
-            },
-            "url": { "raw": "{{baseUrl}}/api/recognition/scan", "host": ["{{baseUrl}}"], "path": ["api", "recognition", "scan"] },
-            "description": "Público. Roda o pipeline completo (fases 1-5 + liveness) e registra a tentativa no log de auditoria."
+            "method": "GET",
+            "header": [{ "key": "X-Terminal-Id", "value": "{{terminalId}}" }],
+            "url": { "raw": "{{baseUrl}}/api/recognition/desafio", "host": ["{{baseUrl}}"], "path": ["api", "recognition", "desafio"] },
+            "description": "Público, mas exige um terminal cadastrado (pasta Terminais). Devolve um nonce de uso único (60 s). O POST /api/recognition/scan precisa ser assinado com a chave do terminal, então não dá para chamá-lo daqui: use java scripts/ScanAssinado.java (ver docs/seguranca.md, seção 1)."
           }
         },
         {
           "name": "Obter foto de referência do cadastro",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/admin/rostos/{{embeddingId}}/imagem", "host": ["{{baseUrl}}"], "path": ["api", "admin", "rostos", "{{embeddingId}}", "imagem"] }
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/rostos/{{embeddingId}}/imagem",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "rostos", "{{embeddingId}}", "imagem"]
+            }
           }
         }
       ]
@@ -204,7 +304,60 @@
           "name": "Listar logs por usuário",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/admin/logs/usuario/{{usuarioId}}", "host": ["{{baseUrl}}"], "path": ["api", "admin", "logs", "usuario", "{{usuarioId}}"] }
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/logs/usuario/{{usuarioId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "logs", "usuario", "{{usuarioId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auditoria",
+      "item": [
+        {
+          "name": "Verificar integridade",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/auditoria/verificacao",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "auditoria", "verificacao"]
+            },
+            "description": "Refaz a corrente de hashes dos logs e das ações administrativas e confere os selos assinados (Ed25519 + ML-DSA-65)."
+          }
+        },
+        {
+          "name": "Selar agora",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/admin/auditoria/selar", "host": ["{{baseUrl}}"], "path": ["api", "admin", "auditoria", "selar"] },
+            "description": "Assina o último hash das duas correntes."
+          }
+        },
+        {
+          "name": "Chaves públicas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/auditoria/chaves-publicas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "auditoria", "chaves-publicas"]
+            },
+            "description": "Chaves públicas dos selos, para verificação independente."
+          }
+        },
+        {
+          "name": "Ações administrativas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/admin/auditoria/acoes", "host": ["{{baseUrl}}"], "path": ["api", "admin", "auditoria", "acoes"] },
+            "description": "Últimas ações dos administradores."
           }
         }
       ]
@@ -216,7 +369,11 @@
           "name": "Resumo de acessos",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/api/admin/reports/access-summary", "host": ["{{baseUrl}}"], "path": ["api", "admin", "reports", "access-summary"] }
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/reports/access-summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "reports", "access-summary"]
+            }
           }
         },
         {

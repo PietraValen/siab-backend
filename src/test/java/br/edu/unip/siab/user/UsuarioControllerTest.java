@@ -1,5 +1,6 @@
 package br.edu.unip.siab.user;
 
+import br.edu.unip.siab.auditlog.AuditoriaAdminService;
 import br.edu.unip.siab.accesslevel.NivelAcesso;
 import br.edu.unip.siab.auth.JwtAuthFilter;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,9 @@ class UsuarioControllerTest {
     // toda a cadeia de autenticação aqui.
     @MockitoBean
     private JwtAuthFilter jwtAuthFilter;
+
+    @MockitoBean
+    private AuditoriaAdminService auditoriaAdminService;
 
     private Usuario usuarioDeTeste() {
         NivelAcesso nivel = new NivelAcesso();

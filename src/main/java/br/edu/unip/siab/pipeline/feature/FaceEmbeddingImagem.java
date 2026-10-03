@@ -1,5 +1,6 @@
 package br.edu.unip.siab.pipeline.feature;
 
+import br.edu.unip.siab.crypto.Conversores;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,7 +28,8 @@ import java.time.LocalDateTime;
  * Dado biométrico sensível (LGPD, art. 5º, II) — nunca exposto por rota
  * pública; só acessível autenticado via /api/admin/** (ver SecurityConfig),
  * conforme RNF02 do escopo ("nunca a imagem original... sem controle de
- * acesso").
+ * acesso"). Gravada cifrada com a mesma cifra híbrida do vetor (ver
+ * {@link br.edu.unip.siab.crypto.CifraHibridaService}).
  */
 @Entity
 @Table(name = "face_embedding_imagens")
@@ -47,6 +49,7 @@ public class FaceEmbeddingImagem {
 
     @Lob
     @Column(nullable = false)
+    @Convert(converter = Conversores.ImagemFacial.class)
     private byte[] imagem;
 
     @Column(name = "content_type", nullable = false)

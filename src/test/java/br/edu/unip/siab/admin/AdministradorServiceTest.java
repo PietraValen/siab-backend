@@ -1,5 +1,6 @@
 package br.edu.unip.siab.admin;
 
+import br.edu.unip.siab.auth.TotpService;
 import br.edu.unip.siab.admin.dto.AdministradorRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +29,7 @@ class AdministradorServiceTest {
     private AdministradorService service;
 
     private AdministradorService novoServico() {
-        return new AdministradorService(administradorRepository, passwordEncoder);
+        return new AdministradorService(administradorRepository, passwordEncoder, new TotpService());
     }
 
     @Test

@@ -1,0 +1,17 @@
+# Perfil de produção (SPRING_PROFILES_ACTIVE=prod, já definido no Dockerfile).
+# Seção 2 do roteiro de segurança (docs/seguranca.md).
+
+springdoc:
+  # Swagger e o JSON do OpenAPI não ficam expostos em produção: mapeiam
+  # todos os endpoints para quem estiver procurando um alvo.
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    # DEBUG registra distâncias de reconhecimento, variâncias de liveness e
+    # detalhes de tokens inválidos — útil no desenvolvimento, ruído e
+    # vazamento de informação em produção.
+    br.edu.unip.siab: INFO

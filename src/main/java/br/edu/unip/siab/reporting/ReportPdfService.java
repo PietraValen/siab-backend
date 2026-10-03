@@ -36,7 +36,19 @@ public class ReportPdfService {
     private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     private static final Color COR_CABECALHO_TABELA = new Color(45, 55, 72);
 
+    /**
+     * Selo da cadeia de auditoria no momento da exportação (ver
+     * CadeiaAuditoriaService): impresso no rodapé para que o relatório possa
+     * ser conferido depois contra GET /api/admin/auditoria/verificacao.
+     */
+    public record SeloDoRelatorio(Long checkpointId, String ultimoHash, String impressaoDigital, String assinaturaEd25519) {
+    }
+
     public byte[] gerarRelatorioDeAcessos(List<AccessLog> logs) {
+        return gerarRelatorioDeAcessos(logs, null);
+    }
+
+    public byte[] gerarRelatorioDeAcessos(List<AccessLog> logs, SeloDoRelatorio selo) {
         Document documento = new Document(PageSize.A4, 36, 36, 54, 36);
         ByteArrayOutputStream saida = new ByteArrayOutputStream();
 
@@ -46,6 +58,9 @@ public class ReportPdfService {
 
             adicionarCabecalho(documento, logs.size());
             documento.add(construirTabela(logs));
+            if (selo != null) {
+                adicionarSelo(documento, selo);
+            }
 
             documento.close();
         } catch (DocumentException e) {
@@ -66,6 +81,18 @@ public class ReportPdfService {
                 fonteSubtitulo);
         subtitulo.setSpacingAfter(16f);
         documento.add(subtitulo);
+    }
+
+    private void adicionarSelo(Document documento, SeloDoRelatorio selo) throws DocumentException {
+        Font fonte = new Font(Font.COURIER, 7, Font.NORMAL, Color.DARK_GRAY);
+        Paragraph paragrafo = new Paragraph(
+                "Integridade: cadeia de hashes SHA-256 selada no checkpoint #" + selo.checkpointId()
+                        + " com assinatura híbrida Ed25519 + ML-DSA-65 (FIPS 204).\n"
+                        + "Último hash: " + selo.ultimoHash() + "\n"
+                        + "Chaves: " + selo.impressaoDigital() + "   Ed25519: " + selo.assinaturaEd25519(),
+                fonte);
+        paragrafo.setSpacingBefore(14f);
+        documento.add(paragrafo);
     }
 
     private PdfPTable construirTabela(List<AccessLog> logs) throws DocumentException {

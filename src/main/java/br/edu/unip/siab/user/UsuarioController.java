@@ -1,5 +1,6 @@
 package br.edu.unip.siab.user;
 
+import br.edu.unip.siab.auditlog.AuditoriaAdminService;
 import br.edu.unip.siab.user.dto.UsuarioRequest;
 import br.edu.unip.siab.user.dto.UsuarioResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,6 +30,7 @@ import static br.edu.unip.siab.config.OpenApiConfig.ESQUEMA_JWT;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final AuditoriaAdminService auditoria;
 
     @Operation(summary = "Lista todos os usuários cadastrados")
     @GetMapping
@@ -57,6 +59,8 @@ public class UsuarioController {
     @PostMapping
     public ResponseEntity<UsuarioResponse> criar(@Valid @RequestBody UsuarioRequest request) {
         var criado = usuarioService.criar(request);
+        auditoria.registrar("USUARIO_CRIADO", "usuario=" + criado.getId() + " nivel=" + request.nivelAcessoId()
+                + (request.pin() != null ? " pin=definido" : ""));
         return ResponseEntity.ok(UsuarioResponse.from(criado));
     }
 
@@ -69,10 +73,13 @@ public class UsuarioController {
     @PutMapping("/{id}")
     public UsuarioResponse atualizar(@Parameter(description = "Id do usuário") @PathVariable Long id,
                                       @Valid @RequestBody UsuarioRequest request) {
-        return UsuarioResponse.from(usuarioService.atualizar(id, request));
+        var atualizado = usuarioService.atualizar(id, request);
+        auditoria.registrar("USUARIO_ATUALIZADO", "usuario=" + id + " nivel=" + request.nivelAcessoId()
+                + (request.pin() != null ? " pin=alterado" : ""));
+        return UsuarioResponse.from(atualizado);
     }
 
-    @Operation(summary = "Remove um usuário cadastrado")
+    @Operation(summary = "Remove um usuário cadastrado", description = "Apaga também os vetores e fotos biométricos dele (LGPD). Os logs de acesso continuam, guardando só o id.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Usuário removido"),
             @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
@@ -80,6 +87,7 @@ public class UsuarioController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@Parameter(description = "Id do usuário") @PathVariable Long id) {
         usuarioService.excluir(id);
+        auditoria.registrar("USUARIO_EXCLUIDO", "usuario=" + id + " (biometria apagada)");
         return ResponseEntity.noContent().build();
     }
 }
