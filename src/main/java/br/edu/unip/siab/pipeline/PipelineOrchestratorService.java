@@ -1,6 +1,7 @@
 package br.edu.unip.siab.pipeline;
 
 import br.edu.unip.siab.accesscontrol.AccessControlService;
+import br.edu.unip.siab.accesscontrol.AreaCofre;
 import br.edu.unip.siab.auditlog.AccessLog;
 import br.edu.unip.siab.auditlog.AccessLogService;
 import br.edu.unip.siab.pipeline.feature.FaceEmbedding;
@@ -98,9 +99,10 @@ public class PipelineOrchestratorService {
 
     /**
      * Fluxo de RECONHECIMENTO (tela /scan): processa a imagem por todas as
-     * 5 fases, decide o acesso e registra a tentativa no log de auditoria.
+     * 5 fases, decide o acesso à {@code area} onde o terminal está instalado
+     * e registra a tentativa no log de auditoria.
      */
-    public ResultadoScan reconhecer(MultipartFile imagem) throws IOException {
+    public ResultadoScan reconhecer(MultipartFile imagem, AreaCofre area) throws IOException {
         Mat imagemBruta = decodificar(imagem.getBytes()); // Fase 1 - Aquisição
         Mat preProcessada = preprocessingService.processar(imagemBruta); // Fase 2
 
@@ -125,9 +127,7 @@ public class PipelineOrchestratorService {
         }
 
         Usuario usuario = resultado.usuario().get();
-        // TODO: quando houver múltiplos recursos protegidos por nível, passar
-        // aqui o nível mínimo exigido pelo recurso solicitado em vez de 1L.
-        boolean autorizado = accessControlService.possuiPermissao(usuario, 1L);
+        boolean autorizado = accessControlService.possuiPermissao(usuario, area);
 
         var resultadoLog = autorizado ? AccessLog.Resultado.CONCEDIDO : AccessLog.Resultado.NEGADO;
         accessLogService.registrar(Optional.of(usuario), resultadoLog, resultado.similaridade());

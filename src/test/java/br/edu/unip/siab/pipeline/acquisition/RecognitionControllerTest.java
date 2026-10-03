@@ -1,5 +1,6 @@
 package br.edu.unip.siab.pipeline.acquisition;
 
+import br.edu.unip.siab.accesscontrol.AreaCofre;
 import br.edu.unip.siab.auth.JwtAuthFilter;
 import br.edu.unip.siab.pipeline.PipelineOrchestratorService;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,9 @@ import java.util.Optional;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -47,7 +51,7 @@ class RecognitionControllerTest {
     void rostoNaoReconhecidoRetorna200ComUsuarioNulo() throws Exception {
         var resultado = new PipelineOrchestratorService.ResultadoScan(
                 false, Optional.empty(), 0.62, "Usuário não reconhecido.");
-        when(pipelineOrchestratorService.reconhecer(any())).thenReturn(resultado);
+        when(pipelineOrchestratorService.reconhecer(any(), any())).thenReturn(resultado);
 
         MockMultipartFile imagem = new MockMultipartFile("imagem", "captura.jpg", "image/jpeg", new byte[]{1, 2, 3});
 
@@ -56,5 +60,49 @@ class RecognitionControllerTest {
                 .andExpect(jsonPath("$.acessoConcedido").value(false))
                 .andExpect(jsonPath("$.usuario").value(nullValue()))
                 .andExpect(jsonPath("$.motivo").value("Usuário não reconhecido."));
+    }
+
+    @Test
+    @WithMockUser
+    void semAreaUsaGeralComoPadrao() throws Exception {
+        var resultado = new PipelineOrchestratorService.ResultadoScan(
+                false, Optional.empty(), 0.62, "Usuário não reconhecido.");
+        when(pipelineOrchestratorService.reconhecer(any(), eq(AreaCofre.GERAL))).thenReturn(resultado);
+
+        MockMultipartFile imagem = new MockMultipartFile("imagem", "captura.jpg", "image/jpeg", new byte[]{1, 2, 3});
+
+        mockMvc.perform(multipart("/api/recognition/scan").file(imagem))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.area").value("GERAL"))
+                .andExpect(jsonPath("$.nivelExigido").value(1));
+    }
+
+    @Test
+    @WithMockUser
+    void areaInformadaChegaAoOrquestrador() throws Exception {
+        var resultado = new PipelineOrchestratorService.ResultadoScan(
+                false, Optional.empty(), 0.12, "Nível de acesso insuficiente.");
+        when(pipelineOrchestratorService.reconhecer(any(), eq(AreaCofre.MINISTRO))).thenReturn(resultado);
+
+        MockMultipartFile imagem = new MockMultipartFile("imagem", "captura.jpg", "image/jpeg", new byte[]{1, 2, 3});
+
+        mockMvc.perform(multipart("/api/recognition/scan").file(imagem).param("area", "ministro"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.area").value("MINISTRO"))
+                .andExpect(jsonPath("$.nivelExigido").value(3));
+
+        verify(pipelineOrchestratorService).reconhecer(any(), eq(AreaCofre.MINISTRO));
+    }
+
+    @Test
+    @WithMockUser
+    void areaDesconhecidaRetorna400SemRodarOPipeline() throws Exception {
+        MockMultipartFile imagem = new MockMultipartFile("imagem", "captura.jpg", "image/jpeg", new byte[]{1, 2, 3});
+
+        mockMvc.perform(multipart("/api/recognition/scan").file(imagem).param("area", "garagem"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensagem").exists());
+
+        verify(pipelineOrchestratorService, never()).reconhecer(any(), any());
     }
 }

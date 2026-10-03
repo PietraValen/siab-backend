@@ -175,7 +175,8 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "imagem", "type": "file", "src": "" }
+                { "key": "imagem", "type": "file", "src": "" },
+                { "key": "area", "type": "text", "value": "GERAL", "description": "GERAL, DIRETORIA ou MINISTRO (opcional, padrão GERAL)" }
               ]
             },
             "url": { "raw": "{{baseUrl}}/api/recognition/scan", "host": ["{{baseUrl}}"], "path": ["api", "recognition", "scan"] },
