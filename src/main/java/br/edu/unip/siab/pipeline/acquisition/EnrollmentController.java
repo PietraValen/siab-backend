@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,21 +18,24 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Map;
 
+import static br.edu.unip.siab.config.OpenApiConfig.ESQUEMA_JWT;
+
 /**
  * Módulo "image-acquisition" (Fase 1 do pipeline) aplicado ao fluxo de
- * CADASTRO. Consumido pela tela /enroll do front-end Next.js.
+ * CADASTRO. Consumido pela tela /admin/enroll do front-end Next.js.
  * <p>
  * Recebe o frame capturado pela webcam (getUserMedia) via multipart/form-data
  * e delega ao orquestrador, que executa as fases 2, 3 e 4 e salva o
  * embedding gerado.
  * <p>
- * Público (sem JWT) por SecurityConfig — é a própria tela de cadastro
- * facial, não uma rota administrativa.
+ * Exige JWT do painel administrativo (ver SecurityConfig): o cadastro
+ * biométrico é uma ação do administrador logado, nunca do próprio usuário.
  */
 @RestController
 @RequestMapping("/api/enrollment")
 @RequiredArgsConstructor
-@Tag(name = "Cadastro Facial", description = "Fase 1 (aquisição) do fluxo de enrollment — tela /enroll")
+@Tag(name = "Cadastro Facial", description = "Fase 1 (aquisição) do fluxo de enrollment — tela /admin/enroll")
+@SecurityRequirement(name = ESQUEMA_JWT)
 public class EnrollmentController {
 
     private final PipelineOrchestratorService pipelineOrchestratorService;
@@ -40,6 +44,7 @@ public class EnrollmentController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Rosto cadastrado com sucesso"),
             @ApiResponse(responseCode = "400", description = "Nenhum rosto detectado na imagem enviada"),
+            @ApiResponse(responseCode = "403", description = "Token JWT ausente, inválido ou expirado"),
             @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
     })
     @PostMapping(consumes = "multipart/form-data")

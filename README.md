@@ -83,7 +83,7 @@ depois de cada mudança.
 |---|---|---|
 | POST | `/api/auth/login` | Login do painel admin, retorna JWT |
 | GET/POST/PUT/DELETE | `/api/admin/usuarios` | CRUD de usuários (requer JWT) |
-| POST | `/api/enrollment` | Cadastra o rosto de um usuário (multipart: `usuarioId`, `imagem`) |
+| POST | `/api/enrollment` | Cadastra o rosto de um usuário (multipart: `usuarioId`, `imagem`; requer JWT) |
 | POST | `/api/recognition/scan` | Roda o pipeline completo e decide o acesso (multipart: `imagem`) |
 | GET | `/api/admin/logs` | Lista o histórico de tentativas (requer JWT) |
 | GET | `/api/admin/reports/access-summary` | Resumo de acessos (requer JWT) |

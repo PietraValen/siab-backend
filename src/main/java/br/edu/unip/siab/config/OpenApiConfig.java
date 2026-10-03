@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
  * Declara o esquema de autenticação Bearer JWT ({@value #ESQUEMA_JWT}) nos
  * componentes globais da API. Não é adicionado como requisito de
  * segurança global (isso marcaria TODO endpoint como protegido no Swagger
- * UI, incluindo /api/auth/login, /api/enrollment/** e /api/recognition/**,
+ * UI, incluindo /api/auth/login e /api/recognition/**,
  * que são públicos por SecurityConfig) — em vez disso, cada controller
  * protegido é anotado individualmente com
  * {@code @SecurityRequirement(name = "bearerAuth")}, refletindo fielmente

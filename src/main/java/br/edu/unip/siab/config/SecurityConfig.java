@@ -20,7 +20,10 @@ import org.springframework.web.cors.CorsConfigurationSource;
  * Regras de segurança da API.
  * <p>
  * - /api/auth/**                     -> público (login e bootstrap do painel administrativo)
- * - /api/enrollment/**                -> público (cadastro facial, Fase 1 do pipeline)
+ * - /api/enrollment/**                -> exige token JWT válido. O cadastro facial
+ *   é uma ação do administrador logado (tela /admin/enroll do front-end); se
+ *   fosse público, qualquer pessoa poderia associar o próprio rosto a um
+ *   usuário existente (inclusive de nível Ministro) e passar pelo /scan.
  * - /api/recognition/**                -> público (tela de reconhecimento /scan)
  * - POST /api/admin/administradores   -> público na camada de filtro; o
  *   {@link br.edu.unip.siab.admin.AdministradorController} decide na marra
@@ -48,7 +51,6 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/enrollment/**").permitAll()
                 .requestMatchers("/api/recognition/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/admin/administradores").permitAll()
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()

@@ -50,6 +50,7 @@ Content-Type: application/json
 # No VS Code REST Client, multipart precisa de um arquivo real no disco.
 # Guarde o "embeddingId" da resposta para usar no passo 8.
 POST {{baseUrl}}/api/enrollment
+Authorization: Bearer {{token}}
 Content-Type: multipart/form-data; boundary=----siabBoundary
 
 ------siabBoundary
