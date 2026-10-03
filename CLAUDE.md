@@ -112,6 +112,10 @@ mvn test -Dtest=RecognitionServiceTest   # roda uma classe específica
   `SiabBackendApplicationTests`), construa uma variante local com
   `RUN apt-get install -y libgtk2.0-0 libcanberra-gtk-module libgl1
   libglib2.0-0` em cima dessa imagem.
+- Em sessões do Claude Code na nuvem, `.claude/hooks/session-start.sh`
+  instala o JDK 25 e essas libs de GTK automaticamente (via `apt`) e
+  aponta o `JAVA_HOME` para o JDK 25 — lá `mvn test` roda direto, sem
+  Docker, e a suíte inteira passa.
 
 ## Notas de ambiente (Java 25 / Spring Boot 4.1 / JavaCV) — armadilhas já resolvidas
 
