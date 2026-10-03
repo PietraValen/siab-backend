@@ -13,7 +13,8 @@ import org.springframework.test.context.TestPropertySource;
         "spring.datasource.url=jdbc:h2:mem:testdb",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.sql.init.mode=never"
+        "spring.sql.init.mode=never",
+        "siab.security.jwt-secret=segredo-so-para-o-teste-de-contexto-com-32-bytes-ou-mais"
 })
 class SiabBackendApplicationTests {
 

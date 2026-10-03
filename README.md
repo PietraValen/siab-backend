@@ -48,12 +48,18 @@ br.edu.unip.siab
 
 ## Como rodar localmente (fora de container, para desenvolvimento)
 
-1. Copie `.env.example` para `.env` e preencha com os dados do Aiven
+1. Copie `.env.example` para `.env` e preencha com os dados do Aiven.
+   `JWT_SECRET` é obrigatório: a aplicação não sobe sem ele, com menos de
+   32 bytes ou com o valor de exemplo. Gere um com `openssl rand -base64 48`.
 2. Exporte as variáveis (ou configure na sua IDE) e rode:
    ```bash
    mvn spring-boot:run
    ```
 3. Acesse `http://localhost:8080/swagger-ui.html`
+4. Num banco novo não existe nenhum administrador (nenhuma senha padrão é
+   semeada). Crie o primeiro com `POST /api/admin/administradores`, que
+   dispensa JWT só enquanto a tabela estiver vazia (bloco "0." do
+   `requests.http`), e depois faça login normalmente.
 
 ## Como rodar via Podman (mesmo ambiente da VM)
 
