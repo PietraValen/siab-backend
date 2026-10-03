@@ -129,11 +129,18 @@ public class PipelineOrchestratorService {
      */
     public ResultadoScan reconhecer(EntradaScan entrada) {
         List<Mat> rostos = new ArrayList<>();
+        // Mesmo recorte de cada rosto, mas da imagem em cinza SEM
+        // equalização: é nela que o liveness mede a textura (ver
+        // PreprocessingService#paraCinza).
+        List<Mat> rostosSemEqualizacao = new ArrayList<>();
         for (byte[] frame : entrada.frames()) {
             validadorDeImagem.validar(frame);
             Mat imagemBruta = decodificar(frame); // Fase 1 - Aquisição
             Mat preProcessada = preprocessingService.processar(imagemBruta); // Fase 2
-            segmentationService.segmentar(preProcessada).ifPresent(rostos::add); // Fase 3
+            segmentationService.localizar(preProcessada).ifPresent(regiao -> { // Fase 3
+                rostos.add(new Mat(preProcessada, regiao));
+                rostosSemEqualizacao.add(new Mat(preprocessingService.paraCinza(imagemBruta), regiao));
+            });
         }
 
         if (rostos.isEmpty()) {
@@ -141,12 +148,12 @@ public class PipelineOrchestratorService {
                     "Nenhum rosto detectado. Posicione o rosto no centro da câmera.");
         }
 
-        LivenessService.Resultado vivacidade = livenessService.verificarSequencia(rostos);
+        LivenessService.Resultado vivacidade = livenessService.verificarSequencia(rostos, rostosSemEqualizacao);
         if (!vivacidade.aprovado()) {
             return negar(entrada, Optional.empty(), 0.0, "Falha na verificação de vivacidade: " + vivacidade.motivo(), MENSAGEM_NEGADO);
         }
 
-        Mat rosto = rostos.get(livenessService.indiceMaisNitido(rostos));
+        Mat rosto = rostos.get(livenessService.indiceMaisNitido(rostosSemEqualizacao));
         float[] vetor = featureExtractionService.extrair(rosto); // Fase 4
         var resultado = recognitionService.reconhecer(vetor); // Fase 5
 

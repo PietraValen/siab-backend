@@ -45,10 +45,19 @@ public class SegmentationService {
     }
 
     /**
-     * @return o recorte (ROI) do primeiro rosto detectado, ou vazio se
+     * @return o recorte (ROI) do maior rosto detectado, ou vazio se
      * nenhum rosto foi encontrado na imagem.
      */
     public Optional<Mat> segmentar(Mat imagemPreProcessada) {
+        return localizar(imagemPreProcessada).map(rosto -> new Mat(imagemPreProcessada, rosto));
+    }
+
+    /**
+     * Mesma detecção de {@link #segmentar(Mat)}, mas devolve só o retângulo
+     * do maior rosto — para recortar a mesma região de outra versão do
+     * frame (ex.: a imagem em cinza sem equalização, usada pelo liveness).
+     */
+    public Optional<Rect> localizar(Mat imagemPreProcessada) {
         log.debug("Fase 3 - Segmentação: iniciando detecção facial");
 
         RectVector faces = new RectVector();
@@ -67,8 +76,7 @@ public class SegmentationService {
             }
         }
 
-        Mat rosto = new Mat(imagemPreProcessada, maiorRosto);
         log.debug("Fase 3 - Segmentação: rosto isolado com sucesso");
-        return Optional.of(rosto);
+        return Optional.of(maiorRosto);
     }
 }

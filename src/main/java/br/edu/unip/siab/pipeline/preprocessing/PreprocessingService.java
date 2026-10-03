@@ -22,8 +22,7 @@ public class PreprocessingService {
     public Mat processar(Mat imagemOriginal) {
         log.debug("Fase 2 - Pré-processamento: iniciando");
 
-        Mat cinza = new Mat();
-        cvtColor(imagemOriginal, cinza, COLOR_BGR2GRAY);
+        Mat cinza = paraCinza(imagemOriginal);
 
         Mat equalizada = new Mat();
         equalizeHist(cinza, equalizada);
@@ -34,5 +33,18 @@ public class PreprocessingService {
 
         log.debug("Fase 2 - Pré-processamento: concluído");
         return equalizada;
+    }
+
+    /**
+     * Só a conversão para escala de cinza, sem equalização. Usada pela
+     * análise textural do liveness (ver {@code LivenessService}): a
+     * equalização de histograma estica o contraste e infla a variância do
+     * Laplaciano, o que aproximaria uma foto impressa (lisa) de um rosto
+     * real e enfraqueceria a verificação.
+     */
+    public Mat paraCinza(Mat imagemOriginal) {
+        Mat cinza = new Mat();
+        cvtColor(imagemOriginal, cinza, COLOR_BGR2GRAY);
+        return cinza;
     }
 }

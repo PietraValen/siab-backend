@@ -17,6 +17,7 @@ import br.edu.unip.siab.terminal.Terminal;
 import br.edu.unip.siab.user.Usuario;
 import br.edu.unip.siab.user.UsuarioService;
 import org.bytedeco.opencv.opencv_core.Mat;
+import org.bytedeco.opencv.opencv_core.Rect;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,8 +79,9 @@ class PipelineOrchestratorServiceTest {
         ministro.setId(3L);
         ministro.setNome("Ministra");
         when(preprocessingService.processar(any())).thenAnswer(i -> i.getArgument(0));
-        when(segmentationService.segmentar(any())).thenAnswer(i -> Optional.of(new Mat()));
-        when(livenessService.verificarSequencia(anyList())).thenReturn(new LivenessService.Resultado(true, "ok"));
+        when(preprocessingService.paraCinza(any())).thenAnswer(i -> i.getArgument(0));
+        when(segmentationService.localizar(any())).thenReturn(Optional.of(new Rect(0, 0, 16, 16)));
+        when(livenessService.verificarSequencia(anyList(), anyList())).thenReturn(new LivenessService.Resultado(true, "ok"));
         when(featureExtractionService.extrair(any())).thenReturn(new float[]{0.1f});
         when(recognitionService.reconhecer(any())).thenReturn(
                 new RecognitionService.ResultadoReconhecimento(Optional.of(ministro), 0.2));
@@ -131,7 +133,7 @@ class PipelineOrchestratorServiceTest {
 
     @Test
     void falhaDeVivacidadeNaoContaQualVerificacaoFalhou() {
-        when(livenessService.verificarSequencia(anyList()))
+        when(livenessService.verificarSequencia(anyList(), anyList()))
                 .thenReturn(new LivenessService.Resultado(false, "Nenhuma piscada detectada na sequência."));
 
         var resultado = orquestrador.reconhecer(new PipelineOrchestratorService.EntradaScan(frames, portaDoNivel(1L), null, null));
