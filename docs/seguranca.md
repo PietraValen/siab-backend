@@ -185,6 +185,20 @@ então não há janela de indisponibilidade.
 logs de acesso dele são mantidos (trilha de auditoria), mas desvinculados:
 aparecem como "Usuário excluído (#id)".
 
+### 5.4 Retenção das fotos originais
+
+O reconhecimento só usa o vetor LBPH; a foto original serve para conferência
+visual e para calibrar os thresholds. Por isso ela tem prazo:
+
+- Todo dia às 03:30 a API apaga as fotos com mais de
+  `SIAB_RETENCAO_FOTOS_DIAS` dias (padrão 180; `0` desliga o prazo).
+- `DELETE /api/admin/rostos/imagens` apaga todas de uma vez, para quando a
+  calibração terminar.
+
+Os vetores ficam, então ninguém precisa se recadastrar. As duas remoções
+entram na auditoria (`FOTOS_BIOMETRICAS_EXPIRADAS`, feita por "(sistema)",
+e `FOTOS_BIOMETRICAS_APAGADAS`, feita pelo admin logado).
+
 ## 6. Auditoria encadeada e assinada
 
 - Cada registro de `logs_acesso` guarda `hash = SHA-256(hashAnterior + "\n"

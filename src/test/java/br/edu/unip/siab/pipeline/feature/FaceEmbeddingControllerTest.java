@@ -13,8 +13,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Optional;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -38,6 +40,9 @@ class FaceEmbeddingControllerTest {
 
     @MockitoBean
     private AuditoriaAdminService auditoriaAdminService;
+
+    @MockitoBean
+    private RetencaoFotosService retencaoFotosService;
 
     @Test
     @WithMockUser
@@ -68,5 +73,15 @@ class FaceEmbeddingControllerTest {
 
         mockMvc.perform(get("/api/admin/rostos/999/imagem"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
+    void apagaTodasAsFotosERetornaAQuantidade() throws Exception {
+        when(retencaoFotosService.expurgarTodas()).thenReturn(5);
+
+        mockMvc.perform(delete("/api/admin/rostos/imagens"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.removidas").value(5));
     }
 }

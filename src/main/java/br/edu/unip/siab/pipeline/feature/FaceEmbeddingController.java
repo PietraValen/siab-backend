@@ -10,10 +10,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 import static br.edu.unip.siab.config.OpenApiConfig.ESQUEMA_JWT;
 
@@ -33,6 +36,7 @@ public class FaceEmbeddingController {
 
     private final FaceEmbeddingImagemRepository faceEmbeddingImagemRepository;
     private final AuditoriaAdminService auditoria;
+    private final RetencaoFotosService retencaoFotos;
 
     @Operation(summary = "Obtém a foto de referência de um cadastro facial", description = "O id é o mesmo 'embeddingId' retornado por POST /api/enrollment no momento do cadastro.")
     @ApiResponses({
@@ -48,5 +52,13 @@ public class FaceEmbeddingController {
                         .contentType(MediaType.parseMediaType(imagem.getContentType()))
                         .body(imagem.getImagem()))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @Operation(summary = "Apaga todas as fotos de referência",
+            description = "Para usar quando a calibração dos thresholds terminar: os embeddings continuam, então o reconhecimento segue funcionando. Fotos com mais de siab.biometria.retencao-fotos-dias já saem sozinhas todo dia.")
+    @ApiResponse(responseCode = "200", description = "Quantidade de fotos apagadas")
+    @DeleteMapping("/imagens")
+    public Map<String, Integer> apagarTodasAsImagens() {
+        return Map.of("removidas", retencaoFotos.expurgarTodas());
     }
 }

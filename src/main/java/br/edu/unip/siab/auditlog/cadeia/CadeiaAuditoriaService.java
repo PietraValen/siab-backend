@@ -8,6 +8,7 @@ import br.edu.unip.siab.crypto.AssinaturaHibridaService;
 import br.edu.unip.siab.crypto.AssinaturaHibridaService.AssinaturaHibrida;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,13 +48,16 @@ public class CadeiaAuditoriaService {
     private final AcaoAdministrativaRepository acaoRepository;
     private final CheckpointAuditoriaRepository checkpointRepository;
     private final AssinaturaHibridaService assinatura;
+    private final boolean selagemAutomatica;
 
     public CadeiaAuditoriaService(AccessLogRepository accessLogRepository, AcaoAdministrativaRepository acaoRepository,
-                                  CheckpointAuditoriaRepository checkpointRepository, AssinaturaHibridaService assinatura) {
+                                  CheckpointAuditoriaRepository checkpointRepository, AssinaturaHibridaService assinatura,
+                                  @Value("${siab.auditoria.selagem-automatica:true}") boolean selagemAutomatica) {
         this.accessLogRepository = accessLogRepository;
         this.acaoRepository = acaoRepository;
         this.checkpointRepository = checkpointRepository;
         this.assinatura = assinatura;
+        this.selagemAutomatica = selagemAutomatica;
     }
 
     public record RelatorioIntegridade(
@@ -70,6 +74,9 @@ public class CadeiaAuditoriaService {
     @Scheduled(initialDelayString = "${siab.auditoria.intervalo-selagem-ms:3600000}",
             fixedDelayString = "${siab.auditoria.intervalo-selagem-ms:3600000}")
     public void selarPeriodicamente() {
+        if (!selagemAutomatica) {
+            return;
+        }
         List<CheckpointAuditoria> novos = selar();
         if (!novos.isEmpty()) {
             log.info("Auditoria: {} checkpoint(s) assinados (Ed25519 + ML-DSA-65).", novos.size());
