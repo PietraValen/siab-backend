@@ -68,8 +68,10 @@ encadeada, relatório em PDF, login administrativo com MFA e Swagger.
    FAR/FRR do limiar atual, o limiar do Equal Error Rate e o maior limiar
    sem nenhuma falsa aceitação (o mais indicado para um cofre).
 2. **Calibrar o limiar de textura do liveness** (`liveness-variance-threshold`).
-3. **Teste de segmentação com foto real**, com consentimento de quem aparece
-   (ver `CLAUDE.md`).
+3. **Teste de segmentação com foto real**: coloque
+   `src/test/resources/fixtures/rosto-exemplo.jpg` localmente, com
+   consentimento de quem aparece, e rode `mvn test -Dtest=SegmentationServiceTest`.
+   A pasta está no `.gitignore`, então a foto não vai para o repositório.
 
 ## Como rodar localmente (fora de container, para desenvolvimento)
 

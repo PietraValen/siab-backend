@@ -69,11 +69,11 @@ pipeline.
    genuínas vs. de impostor dos vetores cadastrados e sugere o limiar do
    EER e o maior limiar com FAR = 0; falta o grupo cadastrar 2+ fotos por
    pessoa e escolher o valor. O liveness ainda não tem ferramenta.
-2. **Teste de segmentação com foto real** — `SegmentationServiceTest` só
-   cobre o caso "nenhum rosto detectado" (imagem preta). Adicionar uma foto
-   real de rosto em `src/test/resources/fixtures/` (com consentimento de
-   quem aparece na foto — dado biométrico) e testar
-   `service.segmentar(...)` retornando um Mat não vazio fica para o grupo.
+2. **Teste de segmentação com foto real** — o teste já existe
+   (`SegmentationServiceTest#fotoRealDeRostoTemRostoDetectado`), mas é
+   pulado até alguém colocar `src/test/resources/fixtures/rosto-exemplo.jpg`
+   localmente (com consentimento de quem aparece — dado biométrico). A pasta
+   está no `.gitignore` e o repositório é público: a foto nunca vai para o Git.
 
 ## Segurança (ver `docs/seguranca.md`)
 
