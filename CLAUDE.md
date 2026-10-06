@@ -37,7 +37,7 @@ Google Vision, etc.). Isso anularia o objetivo acadêmico do trabalho.
 | `pipeline/preprocessing/` | **Fase 2** — escala de cinza, equalização |
 | `pipeline/segmentation/` | **Fase 3** — detecção facial (Haar Cascade) |
 | `pipeline/feature/` | **Fase 4** — extração de características (LBPH) + foto de referência do cadastro |
-| `pipeline/recognition/` | **Fase 5** — comparação por similaridade |
+| `pipeline/recognition/` | **Fase 5** — comparação por similaridade + calibração do limiar (`/api/admin/calibracao`) |
 | `pipeline/liveness/` | Anti-spoofing (variância do Laplaciano + piscada em vários frames) |
 | `pipeline/acquisition/` | **Fase 1** — controllers REST (`/enrollment`, `/recognition/scan`) |
 | `pipeline/PipelineOrchestratorService.java` | Amarra as 5 fases na ordem certa — **não altere a ordem das chamadas** |
@@ -64,9 +64,11 @@ pipeline.
    medir a distribuição de distâncias e escolher o ponto de corte (ex.:
    Equal Error Rate). Cada cadastro feito via `/api/enrollment` já salva a
    foto original (ver `FaceEmbeddingImagem`), então o dataset vai se
-   acumulando naturalmente com o uso — quando houver fotos suficientes, dá
-   pra escrever um script/endpoint que processe esse dataset e sugira os
-   valores.
+   acumulando naturalmente com o uso. Para o `recognition-threshold`,
+   `GET /api/admin/calibracao` (`CalibracaoService`) já mede as distâncias
+   genuínas vs. de impostor dos vetores cadastrados e sugere o limiar do
+   EER e o maior limiar com FAR = 0; falta o grupo cadastrar 2+ fotos por
+   pessoa e escolher o valor. O liveness ainda não tem ferramenta.
 2. **Teste de segmentação com foto real** — `SegmentationServiceTest` só
    cobre o caso "nenhum rosto detectado" (imagem preta). Adicionar uma foto
    real de rosto em `src/test/resources/fixtures/` (com consentimento de

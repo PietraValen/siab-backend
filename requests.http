@@ -116,6 +116,10 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/api/admin/auditoria/verificacao
 Authorization: Bearer {{token}}
 
+### 11b. Calibrar o limiar de reconhecimento (precisa de 2+ fotos por pessoa)
+GET {{baseUrl}}/api/admin/calibracao
+Authorization: Bearer {{token}}
+
 ### 12. Encerrar a sessão (revoga o token)
 POST {{baseUrl}}/api/auth/logout
 Authorization: Bearer {{token}}

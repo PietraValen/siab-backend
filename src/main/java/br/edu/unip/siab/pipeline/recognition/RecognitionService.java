@@ -37,6 +37,10 @@ public class RecognitionService {
     @Value("${siab.pipeline.recognition-threshold:0.35}")
     private double threshold;
 
+    public double getThreshold() {
+        return threshold;
+    }
+
     public record ResultadoReconhecimento(Optional<Usuario> usuario, double similaridade) {
         public boolean reconhecido() {
             return usuario.isPresent();
@@ -72,7 +76,8 @@ public class RecognitionService {
         return new ResultadoReconhecimento(Optional.empty(), menorDistancia);
     }
 
-    private double distanciaEuclidiana(float[] a, float[] b) {
+    /** Também usada pela {@link CalibracaoService}, para medir com a mesma métrica da decisão. */
+    static double distanciaEuclidiana(float[] a, float[] b) {
         int tamanho = Math.min(a.length, b.length);
         double soma = 0;
         for (int i = 0; i < tamanho; i++) {

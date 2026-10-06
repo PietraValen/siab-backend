@@ -1,11 +1,31 @@
 # SIAB — Back-end (Java / Spring Boot)
 
 API do Sistema de Identificação e Autenticação Biométrica, projeto de APS
-(PIVC — UNIP). A estrutura de pacotes reflete exatamente os módulos
-descritos na seção 5.2 do documento de escopo do projeto.
+(PIVC — UNIP).
+
+**Cenário da APS:** no Ministério do Meio Ambiente há um cofre de segurança
+máxima com relatórios ultrassecretos sobre toxinas de altíssimo risco. O
+SIAB é a última linha de defesa desse cofre: identifica e autentica o rosto
+de quem chega a uma porta e libera ou bloqueia a entrada conforme três
+níveis de permissão.
+
+| Nível | Quem | O que a porta exige |
+|---|---|---|
+| 1 — Acesso Geral | Servidores e equipe técnica | Rosto + prova de vida |
+| 2 — Diretoria | Diretores de divisões específicas | Rosto + prova de vida |
+| 3 — Ministro | Ministro do Meio Ambiente | Rosto + prova de vida + PIN |
+
+Quem tem nível maior também entra nas portas de nível menor. O nível de cada
+porta vem do terminal cadastrado, não do quiosque.
+
+**Identificação vs. autenticação:** a Fase 5 compara o vetor capturado com
+todos os cadastros e escolhe o mais próximo (identificação 1:N). A pessoa só
+é autenticada se essa distância ficar abaixo do limiar, se a prova de vida
+passar e, no nível Ministro, se o PIN estiver certo. Toda tentativa,
+concedida ou negada, vai para o log de auditoria encadeado por hash.
 
 > **Nota de versão:** o documento de escopo menciona "Spring Boot 3", mas a
-> linha 3.x saiu de suporte (EOL) em 30/06/2026. Este esqueleto usa
+> linha 3.x saiu de suporte (EOL) em 30/06/2026. Este projeto usa
 > **Spring Boot 4.1.1** (Java 25 LTS), a versão atualmente suportada. Vale
 > atualizar a seção 4.1 do escopo para refletir isso.
 
@@ -14,37 +34,42 @@ descritos na seção 5.2 do documento de escopo do projeto.
 ```
 br.edu.unip.siab
 ├── config/            Segurança (JWT), CORS, OpenAPI/Swagger
-├── auth/               Módulo "auth" — login administrativo via JWT
-├── user/               Módulo "user-management" — CRUD de usuários
+├── auth/               Login administrativo (cookie HttpOnly + CSRF, MFA TOTP)
+├── admin/              Administradores do painel
+├── user/               CRUD de usuários
 ├── accesslevel/        Os 3 níveis de acesso (niveis_acesso)
 ├── pipeline/
-│   ├── acquisition/    Fase 1 — controllers de /enroll e /scan
-│   ├── preprocessing/  Fase 2 — escala de cinza, equalização
+│   ├── acquisition/    Fase 1 — controllers de /enrollment e /recognition/scan
+│   ├── preprocessing/  Fase 2 — escala de cinza, equalização de histograma
 │   ├── segmentation/   Fase 3 — detecção facial (Haar Cascade)
-│   ├── feature/        Fase 4 — extração de características (PLACEHOLDER)
-│   ├── recognition/     Fase 5 — comparação por similaridade
-│   ├── liveness/        Anti-spoofing (PLACEHOLDER)
+│   ├── feature/        Fase 4 — LBPH implementado pixel a pixel
+│   ├── recognition/    Fase 5 — distância euclidiana + limiar, e calibração do limiar
+│   ├── liveness/       Anti-spoofing (variância do Laplaciano + piscada)
 │   └── PipelineOrchestratorService.java  — amarra as 5 fases (seção 5.5)
-├── accesscontrol/       Módulo "access-control" — regra dos 3 níveis
-├── auditlog/            Módulo "audit-log" — logs_acesso
-└── reporting/            Módulo "reporting" — resumo/relatórios
+├── accesscontrol/      Regra dos 3 níveis + PIN do nível Ministro
+├── terminal/           Terminais (portas) com chave HMAC e desafio por nonce
+├── crypto/             Biometria cifrada em repouso e assinatura híbrida (PQC)
+├── auditlog/           Logs de tentativas e de ações admin, encadeados e selados
+├── security/           Rate limiting e bloqueio progressivo de login
+└── reporting/          Resumo e relatório de auditoria em PDF
 ```
 
-## O que já funciona vs. o que precisa ser implementado
+## O que já funciona vs. o que depende de dados reais
 
-✅ **Funcionando (esqueleto compilável e navegável):**
-- CRUD de usuários e níveis de acesso
-- Login administrativo com JWT
-- Estrutura completa dos endpoints REST (`/api/enrollment`, `/api/recognition/scan`, `/api/admin/**`)
-- Orquestração das 5 fases, na ordem correta, registrando logs de auditoria
-- Swagger UI em `/swagger-ui.html` (assim que a app subir)
+✅ **Funcionando e testado:** as 5 fases do pipeline, prova de vida, regra
+dos 3 níveis com PIN no nível Ministro, terminais assinados, auditoria
+encadeada, relatório em PDF, login administrativo com MFA e Swagger.
 
-🚧 **TODO — trabalho técnico central do grupo (procure "TODO" no código):**
-1. **`SegmentationService`**: baixar o `haarcascade_frontalface_default.xml` (ver `src/main/resources/haarcascades/LEIA-ME.txt`)
-2. **`FeatureExtractionService`**: substituir o placeholder por LBPH real ou por um embedding via ONNX Runtime — **esta é a parte mais importante do projeto tecnicamente**
-3. **`RecognitionService`**: calibrar o `threshold` de decisão com dados reais
-4. **`LivenessService`**: implementar a técnica de anti-spoofing escolhida (piscar de olhos ou análise textural)
-5. **`ReportController`**: gerar PDF real (ex.: com OpenPDF/PDFBox)
+🚧 **Depende de capturas reais do grupo:**
+1. **Calibrar o limiar de reconhecimento** (`siab.pipeline.recognition-threshold`,
+   hoje `0.35`, um chute inicial). Cadastre 2 ou mais fotos de cada pessoa
+   do grupo pelo painel e consulte `GET /api/admin/calibracao`: ele mede as
+   distâncias entre a mesma pessoa e entre pessoas diferentes e devolve a
+   FAR/FRR do limiar atual, o limiar do Equal Error Rate e o maior limiar
+   sem nenhuma falsa aceitação (o mais indicado para um cofre).
+2. **Calibrar o limiar de textura do liveness** (`liveness-variance-threshold`).
+3. **Teste de segmentação com foto real**, com consentimento de quem aparece
+   (ver `CLAUDE.md`).
 
 ## Como rodar localmente (fora de container, para desenvolvimento)
 
