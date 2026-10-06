@@ -78,6 +78,11 @@ siab:
     frames-maximos: 12
   upload:
     dimensao-maxima: 4096
+  biometria:
+    # Fotos originais do cadastro são apagadas depois deste prazo (LGPD,
+    # ver RetencaoFotosService). 0 = guardar sem prazo. O vetor facial fica.
+    retencao-fotos-dias: ${SIAB_RETENCAO_FOTOS_DIAS:180}
+    retencao-cron: "0 30 3 * * *" # todo dia às 03:30
   terminal:
     desafio-validade-segundos: 60
     tolerancia-relogio-segundos: 60
