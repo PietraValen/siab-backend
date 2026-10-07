@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.Length;
 
 import java.time.LocalDateTime;
 
@@ -48,7 +49,7 @@ public class FaceEmbeddingImagem {
     private FaceEmbedding faceEmbedding;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     @Convert(converter = Conversores.ImagemFacial.class)
     private byte[] imagem;
 

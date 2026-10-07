@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.Length;
 
 import java.time.LocalDateTime;
 
@@ -41,9 +42,17 @@ public class Terminal {
     @JoinColumn(name = "nivel_acesso_id", nullable = false)
     private NivelAcesso nivelExigido;
 
-    /** Segredo HMAC-SHA256 (256 bits, Base64), cifrado em repouso. */
+    /**
+     * Segredo HMAC-SHA256 (256 bits, Base64), cifrado em repouso.
+     * <p>
+     * {@code length = Length.LONG32} vale para todo {@code @Lob} do projeto:
+     * sem ele o Hibernate 7 cria TINYTEXT/TINYBLOB (255 bytes) no MySQL, e o
+     * valor cifrado com X25519 + ML-KEM-768 (~1,5 KB) não cabe ("Data too
+     * long for column"). Com ele a coluna vira LONGTEXT/LONGBLOB, e o
+     * {@code ddl-auto: update} amplia sozinho as colunas já existentes.
+     */
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     @Convert(converter = Conversores.ChaveTerminal.class)
     private String chave;
 

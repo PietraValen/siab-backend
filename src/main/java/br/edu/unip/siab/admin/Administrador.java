@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.Length;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
@@ -42,7 +43,7 @@ public class Administrador {
      * confirma um código em /ativar ({@link #totpAtivo}).
      */
     @Lob
-    @Column(name = "totp_segredo")
+    @Column(name = "totp_segredo", length = Length.LONG32)
     @Convert(converter = Conversores.SegredoTotp.class)
     private String totpSegredo;
 
