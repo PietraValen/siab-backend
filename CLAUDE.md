@@ -58,8 +58,9 @@ pipeline.
 🚧 **Pendente — só é possível com dados reais, não algo que dá pra "codar":**
 
 1. **Calibração do `recognition-threshold`** (`RecognitionService`, hoje
-   `0.35`) **e do `liveness-variance-threshold`** (`LivenessService`, hoje
-   `80.0`) — ambos são chutes iniciais. Calibração de verdade exige um
+   `1.0`, medido com selfies de 2 integrantes: FAR = 0, FRR = 76%) **e do
+   `liveness-variance-threshold`** (`LivenessService`, hoje `80.0`, chute
+   inicial). Calibração de verdade exige um
    dataset de capturas reais (mesma pessoa vs. pessoas diferentes) para
    medir a distribuição de distâncias e escolher o ponto de corte (ex.:
    Equal Error Rate). Cada cadastro feito via `/api/enrollment` já salva a
@@ -67,8 +68,11 @@ pipeline.
    acumulando naturalmente com o uso. Para o `recognition-threshold`,
    `GET /api/admin/calibracao` (`CalibracaoService`) já mede as distâncias
    genuínas vs. de impostor dos vetores cadastrados e sugere o limiar do
-   EER e o maior limiar com FAR = 0; falta o grupo cadastrar 2+ fotos por
-   pessoa e escolher o valor. O liveness ainda não tem ferramenta.
+   EER e o maior limiar com FAR = 0; falta repetir a medição com capturas
+   da câmera do terminal (mesma luz e distância do uso real). Nessa medição,
+   a distância qui-quadrado (a do artigo de Ahonen et al.) identificou 9 de
+   11 fotos contra 6 de 11 da euclidiana — candidata a trocar a métrica.
+   O liveness ainda não tem ferramenta.
 2. **Teste de segmentação com foto real** — o teste já existe
    (`SegmentationServiceTest#fotoRealDeRostoTemRostoDetectado`), mas é
    pulado até alguém colocar `src/test/resources/fixtures/rosto-exemplo.jpg`

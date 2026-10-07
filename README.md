@@ -61,12 +61,15 @@ dos 3 níveis com PIN no nível Ministro, terminais assinados, auditoria
 encadeada, relatório em PDF, login administrativo com MFA e Swagger.
 
 🚧 **Depende de capturas reais do grupo:**
-1. **Calibrar o limiar de reconhecimento** (`siab.pipeline.recognition-threshold`,
-   hoje `0.35`, um chute inicial). Cadastre 2 ou mais fotos de cada pessoa
-   do grupo pelo painel e consulte `GET /api/admin/calibracao`: ele mede as
-   distâncias entre a mesma pessoa e entre pessoas diferentes e devolve a
-   FAR/FRR do limiar atual, o limiar do Equal Error Rate e o maior limiar
-   sem nenhuma falsa aceitação (o mais indicado para um cofre).
+1. **Recalibrar o limiar de reconhecimento** (`siab.pipeline.recognition-threshold`,
+   hoje `1.0`). Esse valor veio de selfies de 2 integrantes tiradas em
+   lugares e luzes diferentes: com ele nenhum impostor é aceito, mas 76%
+   dos pares da mesma pessoa também são rejeitados, porque o LBPH sofre com
+   mudança de luz e de pose. Cadastre 2 ou mais fotos de cada pessoa pela
+   câmera do próprio terminal e consulte `GET /api/admin/calibracao`: ele
+   mede as distâncias entre a mesma pessoa e entre pessoas diferentes e
+   devolve a FAR/FRR do limiar atual, o limiar do Equal Error Rate e o maior
+   limiar sem nenhuma falsa aceitação (o mais indicado para um cofre).
 2. **Calibrar o limiar de textura do liveness** (`liveness-variance-threshold`).
 3. **Teste de segmentação com foto real**: coloque
    `src/test/resources/fixtures/rosto-exemplo.jpg` localmente, com

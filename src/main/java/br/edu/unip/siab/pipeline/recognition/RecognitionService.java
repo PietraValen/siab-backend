@@ -31,10 +31,15 @@ public class RecognitionService {
 
     /**
      * Limiar de decisão: quanto MENOR a distância, mais parecido o rosto.
-     * TODO: calibrar este valor experimentalmente com o dataset real do
-     * grupo (poucos usuários de teste vs. impostores) antes da entrega.
+     * <p>
+     * 1.0 vem da primeira medição com fotos reais do grupo (2 pessoas, 11
+     * capturas com rosto detectado, 25 pares genuínos e 30 de impostor):
+     * o impostor mais parecido ficou a 1.195, então 1.0 não aceita nenhum
+     * impostor (FAR = 0) com folga. O chute anterior, 0.35, rejeitava 100%
+     * dos pares genuínos — ninguém seria reconhecido. Refazer a medição com
+     * capturas do próprio terminal via {@link CalibracaoService}.
      */
-    @Value("${siab.pipeline.recognition-threshold:0.35}")
+    @Value("${siab.pipeline.recognition-threshold:1.0}")
     private double threshold;
 
     public double getThreshold() {
