@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.Length;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -44,7 +45,7 @@ public class CheckpointAuditoria {
 
     /** ML-DSA-65: 3309 bytes, ~4,4 KB em Base64. */
     @Lob
-    @Column(name = "assinatura_ml_dsa", nullable = false)
+    @Column(name = "assinatura_ml_dsa", nullable = false, length = Length.LONG32)
     private String assinaturaMlDsa;
 
     @Column(name = "impressao_digital", nullable = false, length = 32)

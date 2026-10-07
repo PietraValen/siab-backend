@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.Length;
 
 import java.time.LocalDateTime;
 
@@ -41,7 +42,7 @@ public class FaceEmbedding {
     private Usuario usuario;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, length = Length.LONG32)
     @Convert(converter = Conversores.VetorFacial.class)
     private String vetor; // ex.: "0.123,-0.045,0.998,..."
 

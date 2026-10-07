@@ -165,6 +165,14 @@ serem re-descobertas em sessões futuras.
   `data.sql` que não a cita) quebram sem um default no banco. Por isso
   `totpAtivo` usa `@ColumnDefault("false")`; faça o mesmo em qualquer
   coluna obrigatória nova.
+- **`@Lob` sem `length` vira TINYTEXT/TINYBLOB (255 bytes) no MySQL** com o
+  Hibernate 7. Os campos cifrados (X25519 + ML-KEM-768) e a assinatura
+  ML-DSA-65 passam de 1 KB, então o INSERT falhava em produção com "Data
+  too long for column" (500 ao cadastrar terminal e ao exportar o PDF), e o
+  H2 dos testes não pegava. Todo `@Lob` usa `@Column(length =
+  Length.LONG32)` (LONGTEXT/LONGBLOB); `LobColunasTest` confere isso. O
+  `ddl-auto: update` do Hibernate 7 amplia sozinho a coluna já existente
+  (`alter table ... modify column`) na próxima subida.
 - **`data.sql` rodava antes do Hibernate criar o schema** (`ddl-auto:
   update`), então a semeadura de `niveis_acesso`/`administradores` falhava
   com "Table ... doesn't exist" na primeira vez que a aplicação sobe contra
