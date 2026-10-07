@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.bytedeco.opencv.opencv_core.Rect;
 import org.bytedeco.opencv.opencv_core.RectVector;
+import org.bytedeco.opencv.opencv_core.Size;
 import org.bytedeco.opencv.opencv_objdetect.CascadeClassifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,16 @@ public class SegmentationService {
 
     private CascadeClassifier faceDetector;
 
+    /**
+     * O rosto precisa ocupar pelo menos 1/{@value} do menor lado do quadro.
+     * Sem esse piso, o Haar Cascade aceitava texturas pequenas do fundo
+     * como "rosto" quando a pessoa estava de perfil (visto nas fotos de
+     * calibração do grupo: recortes de 82–87 px de parede numa foto de
+     * 899 px de largura). Na frente do terminal o rosto ocupa bem mais que
+     * isso, então o piso não rejeita capturas legítimas.
+     */
+    static final int FRACAO_MINIMA_DO_ROSTO = 5;
+
     @PostConstruct
     public void init() {
         // NOTA: baixe o arquivo haarcascade_frontalface_default.xml (disponível
@@ -61,7 +72,9 @@ public class SegmentationService {
         log.debug("Fase 3 - Segmentação: iniciando detecção facial");
 
         RectVector faces = new RectVector();
-        faceDetector.detectMultiScale(imagemPreProcessada, faces);
+        int ladoMinimo = Math.min(imagemPreProcessada.cols(), imagemPreProcessada.rows()) / FRACAO_MINIMA_DO_ROSTO;
+        faceDetector.detectMultiScale(imagemPreProcessada, faces, 1.1, 3, 0,
+                new Size(ladoMinimo, ladoMinimo), new Size());
 
         if (faces.size() == 0) {
             log.debug("Fase 3 - Segmentação: nenhum rosto detectado");

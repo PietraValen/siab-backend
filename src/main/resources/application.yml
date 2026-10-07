@@ -71,7 +71,7 @@ siab:
   pipeline:
     haarcascade-path: classpath:haarcascades/haarcascade_frontalface_default.xml
     eye-cascade-path: classpath:haarcascades/haarcascade_eye.xml
-    recognition-threshold: 0.35
+    recognition-threshold: 1.0           # medido com fotos do grupo (FAR = 0); refaça com GET /api/admin/calibracao
     liveness-variance-threshold: 80.0
     liveness-exigir-piscada: ${LIVENESS_EXIGIR_PISCADA:true}
     liveness-frames-minimos: 3
